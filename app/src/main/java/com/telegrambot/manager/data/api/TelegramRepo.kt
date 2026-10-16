@@ -13,7 +13,6 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
-import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -84,7 +83,7 @@ object TelegramRepo {
         fields["chat_id"] = chatId.plainBody()
         if (!caption.isNullOrBlank()) fields["caption"] = caption.plainBody()
         val part = MultipartBody.Part.createFormData(
-            "photo", fileName, bytes.asRequestBody("image/*".toMediaTypeOrNull())
+            "photo", fileName, bytes.toRequestBody("image/*".toMediaTypeOrNull())
         )
         return wrap(api.sendPhotoUpload(token, fields, part))
     }
@@ -108,7 +107,7 @@ object TelegramRepo {
         fields["chat_id"] = chatId.plainBody()
         if (!caption.isNullOrBlank()) fields["caption"] = caption.plainBody()
         val part = MultipartBody.Part.createFormData(
-            "document", fileName, bytes.asRequestBody("application/octet-stream".toMediaTypeOrNull())
+            "document", fileName, bytes.toRequestBody("application/octet-stream".toMediaTypeOrNull())
         )
         return wrap(api.sendDocumentUpload(token, fields, part))
     }

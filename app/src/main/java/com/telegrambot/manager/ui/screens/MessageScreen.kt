@@ -202,7 +202,7 @@ fun MessageScreen(bot: Bot, onBack: () -> Unit) {
                     }
                 }
                 OutlinedButton(
-                    onClick = { rows = rows + listOf(InlineBtnUi()) },
+                    onClick = { rows = rows + listOf(listOf(InlineBtnUi())) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("افزودن ردیف جدید")

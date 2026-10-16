@@ -29,7 +29,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -87,9 +86,9 @@ fun DashboardScreen(
     onOpen: (String) -> Unit
 ) {
     val vm: DashboardViewModel = viewModel(factory = BotVmFactory { DashboardViewModel(bot) })
-    val info by vm.info.collectAsState()
-    val loading by vm.loading.collectAsState()
-    val error by vm.error.collectAsState()
+    val info = vm.info
+    val loading = vm.loading
+    val error = vm.error
     val context = LocalContext.current
     var confirmDelete by remember { mutableStateOf(false) }
 
