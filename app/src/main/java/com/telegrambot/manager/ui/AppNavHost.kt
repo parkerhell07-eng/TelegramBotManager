@@ -85,7 +85,8 @@ fun AppNavHost() {
         }
 
         composable("bot/{botId}/chats") { entry ->
-            val bot = vm.botById(entry.arguments?.getString("botId") ?: "")
+            val botId = entry.arguments?.getString("botId") ?: ""
+            val bot = vm.botById(botId)
             if (bot == null) LoadingBox() else ChatsScreen(
                 bot = bot,
                 onBack = { navController.popBackStack() },
