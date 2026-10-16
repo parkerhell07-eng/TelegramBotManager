@@ -104,7 +104,7 @@ class ChatThreadViewModel(
         viewModelScope.launch {
             sending = true
             error = null
-            when (val r = TelegramRepo.sendMessage(bot.token, chatId, text, null, null, false)) {
+            when (val r = TelegramRepo.sendMessage(bot.token, chatId.toString(), text, null, null, false)) {
                 is TelegramRepo.ApiResult.Success -> {
                     val m = r.data
                     val mine = ChatMsg(
