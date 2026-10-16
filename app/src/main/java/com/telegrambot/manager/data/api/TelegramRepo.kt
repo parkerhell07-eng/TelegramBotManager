@@ -93,7 +93,16 @@ object TelegramRepo {
     private fun String.plainBody(): RequestBody =
         toRequestBody("text/plain; charset=utf-8".toMediaTypeOrNull())
 
-    suspend fun getMe(token: String): ApiResult<TgUser> = safeCall { api.getMe(token) }
+    /**
+     * Builds the absolute Bot API URL for [method]. The token is embedded in
+     * the path of an ABSOLUTE https URL, which is safe: scheme confusion
+     * ("Malformed URL") only happens for RELATIVE templates like @Path.
+     */
+    private fun apiUrl(token: String, method: String) =
+        "https://api.telegram.org/bot$token/$method"
+
+    suspend fun getMe(token: String): ApiResult<TgUser> =
+        safeCall { api.getMe(apiUrl(token, "getMe")) }
 
     suspend fun sendMessage(
         token: String,
@@ -103,7 +112,9 @@ object TelegramRepo {
         replyMarkup: String?,
         silent: Boolean?
     ): ApiResult<TgMessage> = safeCall {
-        api.sendMessage(token, chatId, text, parseMode, replyMarkup, silent)
+        api.sendMessage(
+            apiUrl(token, "sendMessage"), chatId, text, parseMode, replyMarkup, silent
+        )
     }
 
     suspend fun sendPhotoUrl(
@@ -113,7 +124,7 @@ object TelegramRepo {
         caption: String?,
         parseMode: String?
     ): ApiResult<TgMessage> = safeCall {
-        api.sendPhotoUrl(token, chatId, photo, caption, parseMode)
+        api.sendPhotoUrl(apiUrl(token, "sendPhoto"), chatId, photo, caption, parseMode)
     }
 
     suspend fun sendPhotoFile(
@@ -129,7 +140,7 @@ object TelegramRepo {
         val part = MultipartBody.Part.createFormData(
             "photo", fileName, bytes.toRequestBody("image/*".toMediaTypeOrNull())
         )
-        api.sendPhotoUpload(token, fields, part)
+        api.sendPhotoUpload(apiUrl(token, "sendPhoto"), fields, part)
     }
 
     suspend fun sendDocumentUrl(
@@ -139,7 +150,7 @@ object TelegramRepo {
         caption: String?,
         parseMode: String?
     ): ApiResult<TgMessage> = safeCall {
-        api.sendDocumentUrl(token, chatId, document, caption, parseMode)
+        api.sendDocumentUrl(apiUrl(token, "sendDocument"), chatId, document, caption, parseMode)
     }
 
     suspend fun sendDocumentFile(
@@ -155,7 +166,7 @@ object TelegramRepo {
         val part = MultipartBody.Part.createFormData(
             "document", fileName, bytes.toRequestBody("application/octet-stream".toMediaTypeOrNull())
         )
-        api.sendDocumentUpload(token, fields, part)
+        api.sendDocumentUpload(apiUrl(token, "sendDocument"), fields, part)
     }
 
     suspend fun sendLocation(
@@ -164,45 +175,45 @@ object TelegramRepo {
         latitude: Double,
         longitude: Double
     ): ApiResult<TgMessage> = safeCall {
-        api.sendLocation(token, chatId, latitude, longitude)
+        api.sendLocation(apiUrl(token, "sendLocation"), chatId, latitude, longitude)
     }
 
     suspend fun getUpdates(token: String, offset: Long?): ApiResult<List<TgUpdate>> =
-        safeCall { api.getUpdates(token, offset, 100) }
+        safeCall { api.getUpdates(apiUrl(token, "getUpdates"), offset, 100) }
 
     suspend fun setWebhook(token: String, url: String, dropPending: Boolean?): ApiResult<Boolean> =
-        safeCall { api.setWebhook(token, url, dropPending) }
+        safeCall { api.setWebhook(apiUrl(token, "setWebhook"), url, dropPending) }
 
     suspend fun deleteWebhook(token: String, dropPending: Boolean?): ApiResult<Boolean> =
-        safeCall { api.deleteWebhook(token, dropPending) }
+        safeCall { api.deleteWebhook(apiUrl(token, "deleteWebhook"), dropPending) }
 
     suspend fun getWebhookInfo(token: String): ApiResult<TgWebhookInfo> =
-        safeCall { api.getWebhookInfo(token) }
+        safeCall { api.getWebhookInfo(apiUrl(token, "getWebhookInfo")) }
 
     suspend fun setMyCommands(token: String, commandsJson: String): ApiResult<Boolean> =
-        safeCall { api.setMyCommands(token, commandsJson) }
+        safeCall { api.setMyCommands(apiUrl(token, "setMyCommands"), commandsJson) }
 
     suspend fun getMyCommands(token: String): ApiResult<List<TgBotCommand>> =
-        safeCall { api.getMyCommands(token) }
+        safeCall { api.getMyCommands(apiUrl(token, "getMyCommands")) }
 
     suspend fun deleteMyCommands(token: String): ApiResult<Boolean> =
-        safeCall { api.deleteMyCommands(token) }
+        safeCall { api.deleteMyCommands(apiUrl(token, "deleteMyCommands")) }
 
     suspend fun setMyName(token: String, name: String): ApiResult<Boolean> =
-        safeCall { api.setMyName(token, name) }
+        safeCall { api.setMyName(apiUrl(token, "setMyName"), name) }
 
     suspend fun getMyName(token: String): ApiResult<TgNameResult> =
-        safeCall { api.getMyName(token) }
+        safeCall { api.getMyName(apiUrl(token, "getMyName")) }
 
     suspend fun setMyDescription(token: String, description: String): ApiResult<Boolean> =
-        safeCall { api.setMyDescription(token, description) }
+        safeCall { api.setMyDescription(apiUrl(token, "setMyDescription"), description) }
 
     suspend fun getMyDescription(token: String): ApiResult<TgDescriptionResult> =
-        safeCall { api.getMyDescription(token) }
+        safeCall { api.getMyDescription(apiUrl(token, "getMyDescription")) }
 
     suspend fun setMyShortDescription(token: String, shortDescription: String): ApiResult<Boolean> =
-        safeCall { api.setMyShortDescription(token, shortDescription) }
+        safeCall { api.setMyShortDescription(apiUrl(token, "setMyShortDescription"), shortDescription) }
 
     suspend fun getMyShortDescription(token: String): ApiResult<TgShortDescriptionResult> =
-        safeCall { api.getMyShortDescription(token) }
+        safeCall { api.getMyShortDescription(apiUrl(token, "getMyShortDescription")) }
 }

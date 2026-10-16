@@ -17,22 +17,27 @@ import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.PartMap
-import retrofit2.http.Path
+import retrofit2.http.Url
 
 /**
  * Telegram Bot API endpoints.
- * The bot token is injected into the URL path per call, so a single
- * Retrofit service instance can serve every saved bot.
+ *
+ * IMPORTANT: the full URL (which contains the bot token) is passed with @Url
+ * instead of being interpolated into a @Path template. A bot token contains
+ * a colon ("123456:AAH…"), and when Retrofit substitutes it into a relative
+ * @Path the URL resolver misreads "bot123456:AAH…" as a URI scheme,
+ * failing with "Malformed URL". Building the absolute URL per call avoids
+ * that entirely.
  */
 interface TelegramApi {
 
-    @POST("bot{token}/getMe")
-    suspend fun getMe(@Path("token") token: String): TgResponse<TgUser>
+    @POST
+    suspend fun getMe(@Url url: String): TgResponse<TgUser>
 
     @FormUrlEncoded
-    @POST("bot{token}/sendMessage")
+    @POST
     suspend fun sendMessage(
-        @Path("token") token: String,
+        @Url url: String,
         @Field("chat_id") chatId: String,
         @Field("text") text: String,
         @Field("parse_mode") parseMode: String?,
@@ -41,9 +46,9 @@ interface TelegramApi {
     ): TgResponse<TgMessage>
 
     @FormUrlEncoded
-    @POST("bot{token}/sendPhoto")
+    @POST
     suspend fun sendPhotoUrl(
-        @Path("token") token: String,
+        @Url url: String,
         @Field("chat_id") chatId: String,
         @Field("photo") photo: String,
         @Field("caption") caption: String?,
@@ -51,17 +56,17 @@ interface TelegramApi {
     ): TgResponse<TgMessage>
 
     @Multipart
-    @POST("bot{token}/sendPhoto")
+    @POST
     suspend fun sendPhotoUpload(
-        @Path("token") token: String,
+        @Url url: String,
         @PartMap fields: Map<String, @JvmSuppressWildcards RequestBody>,
         @Part photo: MultipartBody.Part
     ): TgResponse<TgMessage>
 
     @FormUrlEncoded
-    @POST("bot{token}/sendDocument")
+    @POST
     suspend fun sendDocumentUrl(
-        @Path("token") token: String,
+        @Url url: String,
         @Field("chat_id") chatId: String,
         @Field("document") document: String,
         @Field("caption") caption: String?,
@@ -69,88 +74,88 @@ interface TelegramApi {
     ): TgResponse<TgMessage>
 
     @Multipart
-    @POST("bot{token}/sendDocument")
+    @POST
     suspend fun sendDocumentUpload(
-        @Path("token") token: String,
+        @Url url: String,
         @PartMap fields: Map<String, @JvmSuppressWildcards RequestBody>,
         @Part document: MultipartBody.Part
     ): TgResponse<TgMessage>
 
     @FormUrlEncoded
-    @POST("bot{token}/sendLocation")
+    @POST
     suspend fun sendLocation(
-        @Path("token") token: String,
+        @Url url: String,
         @Field("chat_id") chatId: String,
         @Field("latitude") latitude: Double,
         @Field("longitude") longitude: Double
     ): TgResponse<TgMessage>
 
     @FormUrlEncoded
-    @POST("bot{token}/getUpdates")
+    @POST
     suspend fun getUpdates(
-        @Path("token") token: String,
+        @Url url: String,
         @Field("offset") offset: Long?,
         @Field("limit") limit: Int?
     ): TgResponse<List<TgUpdate>>
 
     @FormUrlEncoded
-    @POST("bot{token}/setWebhook")
+    @POST
     suspend fun setWebhook(
-        @Path("token") token: String,
-        @Field("url") url: String,
+        @Url url: String,
+        @Field("url") urlField: String,
         @Field("drop_pending_updates") dropPendingUpdates: Boolean?
     ): TgResponse<Boolean>
 
     @FormUrlEncoded
-    @POST("bot{token}/deleteWebhook")
+    @POST
     suspend fun deleteWebhook(
-        @Path("token") token: String,
+        @Url url: String,
         @Field("drop_pending_updates") dropPendingUpdates: Boolean?
     ): TgResponse<Boolean>
 
-    @POST("bot{token}/getWebhookInfo")
-    suspend fun getWebhookInfo(@Path("token") token: String): TgResponse<TgWebhookInfo>
+    @POST
+    suspend fun getWebhookInfo(@Url url: String): TgResponse<TgWebhookInfo>
 
     @FormUrlEncoded
-    @POST("bot{token}/setMyCommands")
+    @POST
     suspend fun setMyCommands(
-        @Path("token") token: String,
+        @Url url: String,
         @Field("commands") commands: String
     ): TgResponse<Boolean>
 
-    @POST("bot{token}/getMyCommands")
-    suspend fun getMyCommands(@Path("token") token: String): TgResponse<List<TgBotCommand>>
+    @POST
+    suspend fun getMyCommands(@Url url: String): TgResponse<List<TgBotCommand>>
 
-    @POST("bot{token}/deleteMyCommands")
-    suspend fun deleteMyCommands(@Path("token") token: String): TgResponse<Boolean>
+    @POST
+    suspend fun deleteMyCommands(@Url url: String): TgResponse<Boolean>
 
     @FormUrlEncoded
-    @POST("bot{token}/setMyName")
+    @POST
     suspend fun setMyName(
-        @Path("token") token: String,
+        @Url url: String,
         @Field("name") name: String
     ): TgResponse<Boolean>
 
-    @POST("bot{token}/getMyName")
-    suspend fun getMyName(@Path("token") token: String): TgResponse<TgNameResult>
+    @POST
+    suspend fun getMyName(@Url url: String): TgResponse<TgNameResult>
 
     @FormUrlEncoded
-    @POST("bot{token}/setMyDescription")
+    @POST
     suspend fun setMyDescription(
-        @Path("token") token: String,
+        @Url url: String,
         @Field("description") description: String
     ): TgResponse<Boolean>
 
-    @POST("bot{token}/getMyDescription")
-    suspend fun getMyDescription(@Path("token") token: String): TgResponse<TgDescriptionResult>
+    @POST
+    suspend fun getMyDescription(@Url url: String): TgResponse<TgDescriptionResult>
 
     @FormUrlEncoded
-    @POST("bot{token}/setMyShortDescription")
+    @POST
     suspend fun setMyShortDescription(
-        @Path("token") token: String,
+        @Url url: String,
         @Field("short_description") shortDescription: String
     ): TgResponse<Boolean>
 
-    @POST("bot{token}/getMyShortDescription")
-    suspend fun getMyShortDescription(@Path("token") token: String): TgResponse<TgShortDescriptionResult>
+    @POST
+    suspend fun getMyShortDescription(@Url url: String): TgResponse<TgShortDescriptionResult>
 }

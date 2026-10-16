@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Security policy: HTTPS-only traffic. The app only ever talks to
+  api.telegram.org over TLS; any cleartext (HTTP) communication is blocked.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

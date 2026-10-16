@@ -11,8 +11,35 @@ android {
         applicationId = "com.telegrambot.manager"
         minSdk = 24
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.2.0"
+    }
+
+    // Stable release signing so every update installs over the previous
+    // version (Android refuses installs when signatures differ).
+    // Resolution order:
+    //   1) CI secrets (KEYSTORE_FILE / KEYSTORE_* env vars)
+    //   2) keystore/release.keystore + keystore/keystore.properties in the repo
+    //   3) debug key (last-resort local builds)
+    signingConfigs {
+        create("release") {
+            val envFile = System.getenv("KEYSTORE_FILE")
+            val propsFile = rootProject.file("keystore/keystore.properties")
+            if (envFile != null) {
+                storeFile = file(envFile)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEYSTORE_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            } else if (propsFile.exists() && rootProject.file("keystore/release.keystore").exists()) {
+                val props = java.util.Properties().apply {
+                    propsFile.inputStream().use { load(it) }
+                }
+                storeFile = rootProject.file(props.getProperty("storeFile"))
+                storePassword = props.getProperty("storePassword")
+                keyAlias = props.getProperty("keyAlias")
+                keyPassword = props.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -22,9 +49,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Signed with the debug key so the APK is directly installable.
-            // For production, replace with your own keystore.
-            signingConfig = signingConfigs.getByName("debug")
+            val hasCiKey = System.getenv("KEYSTORE_FILE") != null
+            val hasRepoKey = rootProject.file("keystore/keystore.properties").exists() &&
+                rootProject.file("keystore/release.keystore").exists()
+            signingConfig = when {
+                hasCiKey -> signingConfigs.getByName("release")
+                hasRepoKey -> signingConfigs.getByName("release")
+                else -> signingConfigs.getByName("debug")
+            }
         }
     }
 
