@@ -14,6 +14,8 @@ import androidx.navigation.compose.rememberNavController
 import com.telegrambot.manager.ui.components.LoadingBox
 import com.telegrambot.manager.ui.screens.AddBotScreen
 import com.telegrambot.manager.ui.screens.BotsListScreen
+import com.telegrambot.manager.ui.screens.ChatThreadScreen
+import com.telegrambot.manager.ui.screens.ChatsScreen
 import com.telegrambot.manager.ui.screens.CommandsScreen
 import com.telegrambot.manager.ui.screens.DashboardScreen
 import com.telegrambot.manager.ui.screens.MediaScreen
@@ -80,6 +82,25 @@ fun AppNavHost() {
                     onOpen = { suffix -> navController.navigate("bot/$botId/$suffix") }
                 )
             }
+        }
+
+        composable("bot/{botId}/chats") { entry ->
+            val bot = vm.botById(entry.arguments?.getString("botId") ?: "")
+            if (bot == null) LoadingBox() else ChatsScreen(
+                bot = bot,
+                onBack = { navController.popBackStack() },
+                onOpenChat = { chatId -> navController.navigate("bot/$botId/chat/$chatId") }
+            )
+        }
+
+        composable("bot/{botId}/chat/{chatId}") { entry ->
+            val bot = vm.botById(entry.arguments?.getString("botId") ?: "")
+            val chatId = entry.arguments?.getString("chatId")?.toLongOrNull() ?: 0L
+            if (bot == null) LoadingBox() else ChatThreadScreen(
+                bot = bot,
+                chatId = chatId,
+                onBack = { navController.popBackStack() }
+            )
         }
 
         composable("bot/{botId}/message") { entry ->
