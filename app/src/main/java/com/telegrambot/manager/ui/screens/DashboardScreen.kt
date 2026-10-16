@@ -216,12 +216,12 @@ fun DashboardScreen(
             )
 
             val tools = listOf(
-                Triple(Tools.message, TgBlue),
-                Triple(Tools.media, PremiumPurple),
-                Triple(Tools.commands, AccentTeal),
-                Triple(Tools.webhook, AccentOrange),
-                Triple(Tools.updates, AccentPink),
-                Triple(Tools.profile, AccentGreen)
+                Pair(Tools.message, TgBlue),
+                Pair(Tools.media, PremiumPurple),
+                Pair(Tools.commands, AccentTeal),
+                Pair(Tools.webhook, AccentOrange),
+                Pair(Tools.updates, AccentPink),
+                Pair(Tools.profile, AccentGreen)
             )
             tools.chunked(2).forEach { rowTools ->
                 Row(
