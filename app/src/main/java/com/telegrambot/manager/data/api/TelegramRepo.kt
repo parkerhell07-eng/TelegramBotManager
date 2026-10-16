@@ -1,5 +1,6 @@
 package com.telegrambot.manager.data.api
 
+import com.google.gson.JsonParseException
 import com.telegrambot.manager.data.model.TgBotCommand
 import com.telegrambot.manager.data.model.TgDescriptionResult
 import com.telegrambot.manager.data.model.TgMessage
@@ -9,6 +10,7 @@ import com.telegrambot.manager.data.model.TgShortDescriptionResult
 import com.telegrambot.manager.data.model.TgUpdate
 import com.telegrambot.manager.data.model.TgUser
 import com.telegrambot.manager.data.model.TgWebhookInfo
+import kotlinx.coroutines.CancellationException
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -16,7 +18,12 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLException
 
 /** Repository: single entry point for every Telegram API call used by the app. */
 object TelegramRepo {
@@ -50,10 +57,43 @@ object TelegramRepo {
             )
         }
 
+    /**
+     * Runs an API call and converts ANY unexpected exception (no internet,
+     * DNS failure, timeout, TLS error, bad JSON…) into [ApiResult.Failure]
+     * so the UI shows a friendly message instead of crashing.
+     * Cancellation is always re-thrown to keep coroutine cancellation intact.
+     */
+    private suspend fun <T> safeCall(block: suspend () -> TgResponse<T>): ApiResult<T> =
+        try {
+            wrap(block())
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            ApiResult.Failure(friendlyError(e))
+        }
+
+    /** Maps low-level exceptions to clear Persian messages for the user. */
+    private fun friendlyError(e: Exception): String = when (e) {
+        is UnknownHostException ->
+            "اتصال به سرور تلگرام برقرار نشد. اینترنت را بررسی کنید؛ اگر تلگرام فیلتر است، VPN یا پروکسی را روشن کنید و دوباره تلاش کنید."
+        is ConnectException ->
+            "اتصال به سرور تلگرام رد شد. اینترنت یا فیلترشکن را بررسی کنید و دوباره تلاش کنید."
+        is SocketTimeoutException ->
+            "پاسخی از سرور تلگرام دریافت نشد (اتمام مهلت). اتصال خود را بررسی کنید و دوباره تلاش کنید."
+        is SSLException ->
+            "خطای امنیتی در اتصال (SSL). اتصال اینترنت یا فیلترشکن را بررسی کنید."
+        is JsonParseException ->
+            "پاسخ سرور قابل خواندن نبود. لطفاً دوباره تلاش کنید."
+        is IOException ->
+            "خطای شبکه هنگام ارتباط با سرور: ${e.message ?: "نامشخص"}"
+        else ->
+            "خطای غیرمنتظره (${e.javaClass.simpleName}): ${e.message ?: "بدون جزئیات"}"
+    }
+
     private fun String.plainBody(): RequestBody =
         toRequestBody("text/plain; charset=utf-8".toMediaTypeOrNull())
 
-    suspend fun getMe(token: String): ApiResult<TgUser> = wrap(api.getMe(token))
+    suspend fun getMe(token: String): ApiResult<TgUser> = safeCall { api.getMe(token) }
 
     suspend fun sendMessage(
         token: String,
@@ -62,7 +102,9 @@ object TelegramRepo {
         parseMode: String?,
         replyMarkup: String?,
         silent: Boolean?
-    ): ApiResult<TgMessage> = wrap(api.sendMessage(token, chatId, text, parseMode, replyMarkup, silent))
+    ): ApiResult<TgMessage> = safeCall {
+        api.sendMessage(token, chatId, text, parseMode, replyMarkup, silent)
+    }
 
     suspend fun sendPhotoUrl(
         token: String,
@@ -70,7 +112,9 @@ object TelegramRepo {
         photo: String,
         caption: String?,
         parseMode: String?
-    ): ApiResult<TgMessage> = wrap(api.sendPhotoUrl(token, chatId, photo, caption, parseMode))
+    ): ApiResult<TgMessage> = safeCall {
+        api.sendPhotoUrl(token, chatId, photo, caption, parseMode)
+    }
 
     suspend fun sendPhotoFile(
         token: String,
@@ -78,14 +122,14 @@ object TelegramRepo {
         bytes: ByteArray,
         fileName: String,
         caption: String?
-    ): ApiResult<TgMessage> {
+    ): ApiResult<TgMessage> = safeCall {
         val fields = mutableMapOf<String, RequestBody>()
         fields["chat_id"] = chatId.plainBody()
         if (!caption.isNullOrBlank()) fields["caption"] = caption.plainBody()
         val part = MultipartBody.Part.createFormData(
             "photo", fileName, bytes.toRequestBody("image/*".toMediaTypeOrNull())
         )
-        return wrap(api.sendPhotoUpload(token, fields, part))
+        api.sendPhotoUpload(token, fields, part)
     }
 
     suspend fun sendDocumentUrl(
@@ -94,7 +138,9 @@ object TelegramRepo {
         document: String,
         caption: String?,
         parseMode: String?
-    ): ApiResult<TgMessage> = wrap(api.sendDocumentUrl(token, chatId, document, caption, parseMode))
+    ): ApiResult<TgMessage> = safeCall {
+        api.sendDocumentUrl(token, chatId, document, caption, parseMode)
+    }
 
     suspend fun sendDocumentFile(
         token: String,
@@ -102,14 +148,14 @@ object TelegramRepo {
         bytes: ByteArray,
         fileName: String,
         caption: String?
-    ): ApiResult<TgMessage> {
+    ): ApiResult<TgMessage> = safeCall {
         val fields = mutableMapOf<String, RequestBody>()
         fields["chat_id"] = chatId.plainBody()
         if (!caption.isNullOrBlank()) fields["caption"] = caption.plainBody()
         val part = MultipartBody.Part.createFormData(
             "document", fileName, bytes.toRequestBody("application/octet-stream".toMediaTypeOrNull())
         )
-        return wrap(api.sendDocumentUpload(token, fields, part))
+        api.sendDocumentUpload(token, fields, part)
     }
 
     suspend fun sendLocation(
@@ -117,44 +163,46 @@ object TelegramRepo {
         chatId: String,
         latitude: Double,
         longitude: Double
-    ): ApiResult<TgMessage> = wrap(api.sendLocation(token, chatId, latitude, longitude))
+    ): ApiResult<TgMessage> = safeCall {
+        api.sendLocation(token, chatId, latitude, longitude)
+    }
 
     suspend fun getUpdates(token: String, offset: Long?): ApiResult<List<TgUpdate>> =
-        wrap(api.getUpdates(token, offset, 100))
+        safeCall { api.getUpdates(token, offset, 100) }
 
     suspend fun setWebhook(token: String, url: String, dropPending: Boolean?): ApiResult<Boolean> =
-        wrap(api.setWebhook(token, url, dropPending))
+        safeCall { api.setWebhook(token, url, dropPending) }
 
     suspend fun deleteWebhook(token: String, dropPending: Boolean?): ApiResult<Boolean> =
-        wrap(api.deleteWebhook(token, dropPending))
+        safeCall { api.deleteWebhook(token, dropPending) }
 
     suspend fun getWebhookInfo(token: String): ApiResult<TgWebhookInfo> =
-        wrap(api.getWebhookInfo(token))
+        safeCall { api.getWebhookInfo(token) }
 
     suspend fun setMyCommands(token: String, commandsJson: String): ApiResult<Boolean> =
-        wrap(api.setMyCommands(token, commandsJson))
+        safeCall { api.setMyCommands(token, commandsJson) }
 
     suspend fun getMyCommands(token: String): ApiResult<List<TgBotCommand>> =
-        wrap(api.getMyCommands(token))
+        safeCall { api.getMyCommands(token) }
 
     suspend fun deleteMyCommands(token: String): ApiResult<Boolean> =
-        wrap(api.deleteMyCommands(token))
+        safeCall { api.deleteMyCommands(token) }
 
     suspend fun setMyName(token: String, name: String): ApiResult<Boolean> =
-        wrap(api.setMyName(token, name))
+        safeCall { api.setMyName(token, name) }
 
     suspend fun getMyName(token: String): ApiResult<TgNameResult> =
-        wrap(api.getMyName(token))
+        safeCall { api.getMyName(token) }
 
     suspend fun setMyDescription(token: String, description: String): ApiResult<Boolean> =
-        wrap(api.setMyDescription(token, description))
+        safeCall { api.setMyDescription(token, description) }
 
     suspend fun getMyDescription(token: String): ApiResult<TgDescriptionResult> =
-        wrap(api.getMyDescription(token))
+        safeCall { api.getMyDescription(token) }
 
     suspend fun setMyShortDescription(token: String, shortDescription: String): ApiResult<Boolean> =
-        wrap(api.setMyShortDescription(token, shortDescription))
+        safeCall { api.setMyShortDescription(token, shortDescription) }
 
     suspend fun getMyShortDescription(token: String): ApiResult<TgShortDescriptionResult> =
-        wrap(api.getMyShortDescription(token))
+        safeCall { api.getMyShortDescription(token) }
 }

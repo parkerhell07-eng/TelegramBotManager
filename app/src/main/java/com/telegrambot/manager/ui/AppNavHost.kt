@@ -1,5 +1,10 @@
 package com.telegrambot.manager.ui
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -25,7 +30,22 @@ fun AppNavHost() {
     val context = LocalContext.current
     val vm: BotsViewModel = viewModel(factory = BotsViewModelFactory(context))
 
-    NavHost(navController = navController, startDestination = "bots") {
+    NavHost(
+        navController = navController,
+        startDestination = "bots",
+        enterTransition = {
+            slideInHorizontally(tween(260)) { it } + fadeIn(tween(260))
+        },
+        exitTransition = {
+            slideOutHorizontally(tween(220)) { -it / 3 } + fadeOut(tween(220))
+        },
+        popEnterTransition = {
+            slideInHorizontally(tween(260)) { -it / 3 } + fadeIn(tween(260))
+        },
+        popExitTransition = {
+            slideOutHorizontally(tween(220)) { it } + fadeOut(tween(220))
+        }
+    ) {
 
         composable("bots") {
             BotsListScreen(

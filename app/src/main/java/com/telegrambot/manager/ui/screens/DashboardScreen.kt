@@ -1,6 +1,8 @@
 package com.telegrambot.manager.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,7 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudUpload
@@ -20,8 +25,6 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -35,8 +38,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -44,10 +51,19 @@ import com.telegrambot.manager.data.api.TelegramRepo
 import com.telegrambot.manager.data.model.Bot
 import com.telegrambot.manager.data.model.TgUser
 import com.telegrambot.manager.ui.components.AppScaffold
+import com.telegrambot.manager.ui.components.BotAvatar
 import com.telegrambot.manager.ui.components.KeyValueRow
 import com.telegrambot.manager.ui.components.SectionCard
 import com.telegrambot.manager.ui.components.StatusMessage
+import com.telegrambot.manager.ui.components.ToolTile
 import com.telegrambot.manager.ui.components.copyToClipboard
+import com.telegrambot.manager.ui.theme.AccentGreen
+import com.telegrambot.manager.ui.theme.AccentOrange
+import com.telegrambot.manager.ui.theme.AccentPink
+import com.telegrambot.manager.ui.theme.AccentTeal
+import com.telegrambot.manager.ui.theme.HeroGradient
+import com.telegrambot.manager.ui.theme.PremiumPurple
+import com.telegrambot.manager.ui.theme.TgBlue
 import com.telegrambot.manager.vm.BotVmFactory
 import com.telegrambot.manager.vm.BotsViewModel
 import kotlinx.coroutines.launch
@@ -70,14 +86,13 @@ class DashboardViewModel(private val bot: Bot) : ViewModel() {
             error = null
             when (val r = TelegramRepo.getMe(bot.token)) {
                 is TelegramRepo.ApiResult.Success -> info = r.data
-                is TelegramRepo.ApiResult.Failure -> error = "خطا: ${r.message}"
+                is TelegramRepo.ApiResult.Failure -> error = r.message
             }
             loading = false
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     bot: Bot,
@@ -93,7 +108,7 @@ fun DashboardScreen(
     var confirmDelete by remember { mutableStateOf(false) }
 
     AppScaffold(
-        title = bot.name,
+        title = "داشبورد ربات",
         subtitle = if (bot.username.isNotEmpty()) "@${bot.username}" else null,
         onBack = onBack,
         actions = {
@@ -101,7 +116,11 @@ fun DashboardScreen(
                 Icon(Icons.Filled.Refresh, contentDescription = "بازخوانی")
             }
             IconButton(onClick = { confirmDelete = true }) {
-                Icon(Icons.Filled.Delete, contentDescription = "حذف ربات")
+                Icon(
+                    Icons.Filled.Delete,
+                    contentDescription = "حذف ربات",
+                    tint = MaterialTheme.colorScheme.error
+                )
             }
         }
     ) { padding ->
@@ -114,8 +133,54 @@ fun DashboardScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
-            if (error != null) StatusMessage(error ?: "", isError = true)
+            if (error != null) StatusMessage(error, isError = true)
 
+            // ── Hero header ──────────────────────────────────────────────
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(HeroGradient)
+                    .padding(18.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    BotAvatar(
+                        telegramId = bot.telegramId,
+                        name = bot.name,
+                        size = 60.dp,
+                        letterSize = 23.sp
+                    )
+                    Spacer(Modifier.width(14.dp))
+                    Column {
+                        Text(
+                            bot.name,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = Color.White
+                        )
+                        Text(
+                            if (bot.username.isNotEmpty()) "@${bot.username}"
+                            else "شناسه: ${bot.telegramId}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.75f)
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(Color.White.copy(alpha = 0.14f))
+                                .padding(horizontal = 10.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                "ربات متصل است",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ── Bot info card ────────────────────────────────────────────
             info?.let { u ->
                 SectionCard(title = "اطلاعات ربات") {
                     KeyValueRow("نام", u.firstName ?: "-")
@@ -142,36 +207,35 @@ fun DashboardScreen(
                 }
             }
 
-            Text("ابزارهای مدیریت", style = MaterialTheme.typography.titleMedium)
+            // ── Tools grid ───────────────────────────────────────────────
+            Text(
+                "ابزارهای مدیریت",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 4.dp)
+            )
 
             val tools = listOf(
-                Triple("message", "ارسال پیام", Icons.Filled.Send),
-                Triple("media", "ارسال مدیا", Icons.Filled.PhotoLibrary),
-                Triple("commands", "دستورات ربات", Icons.Filled.ListAlt),
-                Triple("webhook", "وب‌هوک", Icons.Filled.CloudUpload),
-                Triple("updates", "پیام‌های دریافتی", Icons.Filled.NotificationsActive),
-                Triple("profile", "پروفایل ربات", Icons.Filled.Person)
+                Triple(Tools.message, TgBlue),
+                Triple(Tools.media, PremiumPurple),
+                Triple(Tools.commands, AccentTeal),
+                Triple(Tools.webhook, AccentOrange),
+                Triple(Tools.updates, AccentPink),
+                Triple(Tools.profile, AccentGreen)
             )
             tools.chunked(2).forEach { rowTools ->
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    rowTools.forEach { (route, label, icon) ->
-                        Card(
-                            onClick = { onOpen(route) },
-                            modifier = Modifier.weight(1f).height(88.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxSize().padding(12.dp),
-                                verticalArrangement = Arrangement.Center,
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                Spacer(Modifier.height(6.dp))
-                                Text(label, style = MaterialTheme.typography.bodyMedium)
-                            }
-                        }
+                    rowTools.forEach { (tool, accent) ->
+                        ToolTile(
+                            label = tool.label,
+                            icon = tool.icon,
+                            accent = accent,
+                            onClick = { onOpen(tool.route) },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     if (rowTools.size == 1) Spacer(Modifier.weight(1f))
                 }
@@ -196,6 +260,8 @@ fun DashboardScreen(
         if (confirmDelete) {
             AlertDialog(
                 onDismissRequest = { confirmDelete = false },
+                shape = RoundedCornerShape(20.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
                 title = { Text("حذف ربات") },
                 text = { Text("«${bot.name}» از اپ حذف شود؟ توکن آن پاک خواهد شد.") },
                 confirmButton = {
@@ -211,4 +277,16 @@ fun DashboardScreen(
             )
         }
     }
+}
+
+/** Static tool metadata: label, icon and navigation route. */
+private data class Tool(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
+
+private object Tools {
+    val message = Tool("message", "ارسال پیام", Icons.Filled.Send)
+    val media = Tool("media", "ارسال مدیا", Icons.Filled.PhotoLibrary)
+    val commands = Tool("commands", "دستورات ربات", Icons.Filled.ListAlt)
+    val webhook = Tool("webhook", "وب‌هوک", Icons.Filled.CloudUpload)
+    val updates = Tool("updates", "پیام‌های دریافتی", Icons.Filled.NotificationsActive)
+    val profile = Tool("profile", "پروفایل ربات", Icons.Filled.Person)
 }

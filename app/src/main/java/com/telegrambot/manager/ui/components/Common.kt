@@ -3,6 +3,11 @@ package com.telegrambot.manager.ui.components
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,18 +15,23 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -30,17 +40,33 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.telegrambot.manager.ui.theme.AvatarGradients
+import com.telegrambot.manager.ui.theme.BlueGradient
+import com.telegrambot.manager.ui.theme.AccentGreen
+import kotlin.math.abs
 
 /** Copy arbitrary text to the system clipboard. */
 fun copyToClipboard(context: Context, label: String, text: String) {
@@ -59,11 +85,16 @@ fun AppScaffold(
     content: @Composable (PaddingValues) -> Unit
 ) {
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                ),
                 title = {
                     Column {
-                        Text(title, fontSize = 18.sp)
+                        Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         if (subtitle != null) {
                             Text(
                                 subtitle,
@@ -88,7 +119,7 @@ fun AppScaffold(
     }
 }
 
-/** Outlined text field with a label and optional keyboard type. */
+/** Rounded, tinted text field used on every form screen. */
 @Composable
 fun LabeledField(
     value: String,
@@ -108,11 +139,19 @@ fun LabeledField(
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         singleLine = singleLine,
         minLines = minLines,
-        enabled = enabled
+        enabled = enabled,
+        shape = RoundedCornerShape(14.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f),
+            cursorColor = MaterialTheme.colorScheme.primary
+        )
     )
 }
 
-/** Full-width primary button with an optional loading spinner. */
+/** Full-width gradient primary button with press animation and loading state. */
 @Composable
 fun PrimaryAction(
     text: String,
@@ -121,56 +160,128 @@ fun PrimaryAction(
     enabled: Boolean = true,
     loading: Boolean = false
 ) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.97f else 1f, label = "btnScale")
+    val isActive = enabled && !loading
+
     Button(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().height(52.dp),
-        enabled = enabled && !loading
+        modifier = modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .graphicsLayer { scaleX = scale; scaleY = scale },
+        enabled = isActive,
+        shape = RoundedCornerShape(18.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Transparent,
+            disabledContainerColor = Color.Transparent
+        ),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = 0.dp, pressedElevation = 0.dp, disabledElevation = 0.dp
+        ),
+        interactionSource = interaction,
+        contentPadding = PaddingValues(0.dp)
     ) {
-        if (loading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-            Spacer(Modifier.width(8.dp))
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(
+                    if (isActive) BlueGradient
+                    else Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ),
+                    RoundedCornerShape(18.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            if (loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(22.dp),
+                    strokeWidth = 2.5.dp,
+                    color = Color.White
+                )
+            } else {
+                Text(
+                    text,
+                    color = if (isActive) Color.White
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                )
+            }
         }
-        Text(text)
     }
 }
 
-/** Colored status banner (success / error). */
+/** Colored status banner (success / error) with an icon. */
 @Composable
 fun StatusMessage(text: String, isError: Boolean = false) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = if (isError) MaterialTheme.colorScheme.errorContainer
-            else MaterialTheme.colorScheme.primaryContainer
-        ),
-        modifier = Modifier.fillMaxWidth()
+    val tint = if (isError) MaterialTheme.colorScheme.error else AccentGreen
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(tint.copy(alpha = 0.12f))
+            .border(1.dp, tint.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp)
     ) {
+        Icon(
+            if (isError) Icons.Filled.ErrorOutline else Icons.Filled.CheckCircle,
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.width(10.dp))
         Text(
             text,
-            modifier = Modifier.padding(12.dp),
-            color = if (isError) MaterialTheme.colorScheme.onErrorContainer
-            else MaterialTheme.colorScheme.onPrimaryContainer,
+            color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.bodyMedium
         )
     }
 }
 
-/** Card with an optional title and spaced content column. */
+/** Dark surface card with a subtle border and a gradient-accented title. */
 @Composable
 fun SectionCard(
     title: String? = null,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(modifier = modifier.fillMaxWidth()) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)
+        )
+    ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            content = content
-        )
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            if (title != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier
+                            .size(width = 4.dp, height = 16.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(BlueGradient)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            content()
+        }
     }
 }
 
@@ -190,6 +301,9 @@ fun KeyValueRow(key: String, value: String, onCopy: (() -> Unit)? = null) {
         Text(
             value,
             style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(0.62f)
         )
         if (onCopy != null) {
@@ -197,7 +311,8 @@ fun KeyValueRow(key: String, value: String, onCopy: (() -> Unit)? = null) {
                 Icon(
                     Icons.Filled.ContentCopy,
                     contentDescription = "کپی",
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -224,6 +339,88 @@ fun EmptyHint(text: String) {
 @Composable
 fun LoadingBox() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(color = Color.Gray)
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+    }
+}
+
+/** Gradient circular avatar showing the first letter of the bot name. */
+@Composable
+fun BotAvatar(
+    telegramId: Long,
+    name: String,
+    size: Dp = 52.dp,
+    letterSize: TextUnit = 19.sp
+) {
+    val gradient = AvatarGradients[(abs(telegramId) % AvatarGradients.size).toInt()]
+    Box(
+        Modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(gradient),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            name.trim().take(1).uppercase().ifEmpty { "B" },
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = letterSize
+        )
+    }
+}
+
+/** Dashboard tool tile: dark card with a colored icon chip and press animation. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ToolTile(
+    label: String,
+    icon: ImageVector,
+    accent: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.95f else 1f, label = "tileScale")
+
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)
+        ),
+        interactionSource = interaction,
+        modifier = modifier
+            .height(88.dp)
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                Modifier
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(accent.copy(alpha = 0.16f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(21.dp)
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
