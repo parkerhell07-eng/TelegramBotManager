@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -32,17 +33,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.telegrambot.manager.data.api.TelegramRepo
 import com.telegrambot.manager.data.model.Bot
+import com.telegrambot.manager.data.store.TemplateStore
 import com.telegrambot.manager.ui.components.AppScaffold
 import com.telegrambot.manager.ui.components.LabeledField
 import com.telegrambot.manager.ui.components.PrimaryAction
 import com.telegrambot.manager.ui.components.SectionCard
 import com.telegrambot.manager.ui.components.StatusMessage
+import com.telegrambot.manager.ui.components.TemplateManagerDialog
+import com.telegrambot.manager.ui.components.applyTemplateVars
 import com.telegrambot.manager.vm.BotVmFactory
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -106,6 +111,10 @@ private fun keyboardJson(rows: List<List<InlineBtnUi>>): String? {
 @Composable
 fun MessageScreen(bot: Bot, onBack: () -> Unit) {
     val vm: MessageViewModel = viewModel(factory = BotVmFactory { MessageViewModel(bot) })
+    val context = LocalContext.current
+    val templateStore = remember { TemplateStore.get(context) }
+    var templates by remember { mutableStateOf(templateStore.load()) }
+    var showTemplates by remember { mutableStateOf(false) }
     var chatId by remember { mutableStateOf("") }
     var text by remember { mutableStateOf("") }
     var parseMode by remember { mutableStateOf<String?>(null) }
@@ -134,6 +143,15 @@ fun MessageScreen(bot: Bot, onBack: () -> Unit) {
                     singleLine = false,
                     minLines = 3
                 )
+                TextButton(onClick = { showTemplates = true }) {
+                    Icon(
+                        Icons.Filled.Description,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text("استفاده از قالب ذخیره‌شده")
+                }
                 Text("فرمت متن:", style = MaterialTheme.typography.labelLarge)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
@@ -227,6 +245,25 @@ fun MessageScreen(bot: Bot, onBack: () -> Unit) {
                 onClick = { vm.send(chatId, text, parseMode, silent, keyboardJson(rows)) }
             )
         }
+    }
+
+    if (showTemplates) {
+        TemplateManagerDialog(
+            templates = templates,
+            onPick = { t ->
+                text = applyTemplateVars(t.body, null)
+                showTemplates = false
+            },
+            onDelete = { t ->
+                templateStore.delete(t.id)
+                templates = templateStore.load()
+            },
+            onAdd = { ti, bo ->
+                templateStore.add(ti, bo)
+                templates = templateStore.load()
+            },
+            onDismiss = { showTemplates = false }
+        )
     }
 }
 

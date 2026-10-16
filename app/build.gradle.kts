@@ -13,8 +13,8 @@ android {
         applicationId = "com.telegrambot.manager"
         minSdk = 24
         targetSdk = 34
-        versionCode = 4
-        versionName = "1.3.0"
+        versionCode = 5
+        versionName = "1.4.0"
     }
 
     // Stable release signing so every update installs over the previous

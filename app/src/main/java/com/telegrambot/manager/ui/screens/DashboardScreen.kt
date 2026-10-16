@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.ListAlt
@@ -218,6 +219,7 @@ fun DashboardScreen(
 
             val tools = listOf(
                 Pair(Tools.chats, TgBlue),
+                Pair(Tools.broadcast, AccentOrange),
                 Pair(Tools.message, TgBlue),
                 Pair(Tools.media, PremiumPurple),
                 Pair(Tools.commands, AccentTeal),
@@ -286,6 +288,7 @@ private data class Tool(val route: String, val label: String, val icon: androidx
 
 private object Tools {
     val chats = Tool("chats", "چت‌ها", Icons.Filled.Forum)
+    val broadcast = Tool("broadcast", "پیام همگانی", Icons.Filled.Campaign)
     val message = Tool("message", "ارسال پیام", Icons.Filled.Send)
     val media = Tool("media", "ارسال مدیا", Icons.Filled.PhotoLibrary)
     val commands = Tool("commands", "دستورات ربات", Icons.Filled.ListAlt)
