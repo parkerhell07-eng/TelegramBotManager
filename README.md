@@ -1,0 +1,145 @@
+# 🤖 TelegramBotManager — مدیریت کامل ربات‌های تلگرام در جیب شما
+
+<div dir="rtl">
+
+اپلیکیشن بومی اندروید (Kotlin + Jetpack Compose) برای مدیریت **چندین ربات تلگرام** از یک جا: افزودن ربات با توکن، ارسال پیام و مدیا با کیبورد شیشه‌ای، مدیریت منوی دستورات، تنظیم وب‌هوک، مشاهده زنده پیام‌های دریافتی و ویرایش پروفایل ربات — همه با رابط کاربری فارسی و راست‌چین و پشتیبانی از رنگ پویا (Dynamic Color) اندروید ۱۲+.
+
+[![Build APK](https://github.com/YOUR-USERNAME/TelegramBotManager/actions/workflows/android-build.yml/badge.svg)](https://github.com/YOUR-USERNAME/TelegramBotManager/actions/workflows/android-build.yml)
+
+> 🔖 بعد از آپلود، `YOUR-USERNAME` را در نشان (badge) بالا با نام کاربری گیت‌هاب خود عوض کنید.
+
+---
+
+## ✨ امکانات
+
+| ابزار | توضیح |
+|---|---|
+| 🔐 **مدیریت چندربات** | افزودن نامحدود ربات؛ توکن‌ها با **AES (Android Keystore)** رمزنگاری و فقط روی گوشی ذخیره می‌شوند |
+| ✅ **اعتبارسنجی خودکار** | هنگام افزودن، توکن با `getMe` بررسی و مشخصات ربات نمایش داده می‌شود |
+| 💬 **ارسال پیام** | متن با فرمت Markdown / HTML، ارسال بی‌صدا، و **سازنده کیبورد شیشه‌ای (Inline Keyboard)** با ردیف‌بندی دلخواه |
+| 🖼 **ارسال مدیا** | عکس و فایل (از لینک مستقیم یا از حافظه گوشی) + ارسال موقعیت مکانی |
+| ⌨️ **دستورات ربات** | ساخت/ویرایش/حذف منوی `/commands` با اعتبارسنجی قالب دستور |
+| 🪝 **وب‌هوک** | `setWebhook` / `deleteWebhook` / `getWebhookInfo` با نمایش وضعیت و خطاهای اخیر |
+| 📥 **پیام‌های دریافتی** | دریافت زنده آپدیت‌ها با `getUpdates` هر ۳ ثانیه + کپی سریع `chat_id` |
+| 👤 **پروفایل ربات** | تغییر نام، توضیحات و توضیح کوتاه ربات با `setMyName` / `setMyDescription` / `setMyShortDescription` |
+| 🎨 **رنگ پویا** | تم خودکار تیره/روشن + هماهنگی رنگ با کاغذدیواری در اندروید ۱۲ به بالا |
+
+**حداقل نسخه پشتیبانی‌شده:** اندروید ۷ (API 24) — **هدف:** اندروید ۱۴ (API 34)
+
+---
+
+## 🚀 شروع سریع
+
+### ۱) گرفتن توکن ربات
+
+1. در تلگرام به [@BotFather](https://t.me/BotFather) پیام بدهید.
+2. دستور `/newbot` را بفرستید و مراحل ساخت را کامل کنید.
+3. توکن (به شکل `123456789:AAHfiqksKZ8WbR5P...`) را کپی کنید.
+4. در اپ، دکمه **+** را بزنید و توکن را وارد کنید؛ اپ آن را اعتبارسنجی و ربات را ذخیره می‌کند.
+
+### ۲) پیدا کردن chat_id مخاطب
+
+- به ربات خود پیام بدهید (یا `/start` بفرستید).
+- در اپ، وارد ربات شوید → ابزار **پیام‌های دریافتی** → دکمه پخش (▶) → `chat_id` پیام‌رسان را کپی کنید.
+
+### ۳) ساختن اپ (Build)
+
+**راه اول — Android Studio (پیشنهادی):**
+
+1. پروژه را در Android Studio (نسخه Hedgehog یا جدیدتر) باز کنید.
+2. صبر کنید تا Gradle Sync تمام شود.
+3. دکمه **Run ▶** یا منوی `Build → Build Bundle(s) / APK(s) → Build APK(s)`.
+
+**راه دوم — خط فرمان:**
+
+```bash
+./gradlew assembleDebug      # APK دیباگ
+./gradlew assembleRelease    # APK ریلیز (امضاشده با کلید debug برای تست)
+```
+
+خروجی: `app/build/outputs/apk/`
+
+> ⚠️ APK ریلیزِ این قالب با کلید debug امضا می‌شود تا قابل نصب باشد. برای انتشار عمومی، یک keystore بسازید و `signingConfig` ریلیز را در `app/build.gradle.kts` تغییر دهید.
+
+---
+
+## 📤 انتشار روی گیت‌هاب
+
+### روش گرافیکی (ساده‌ترین)
+
+1. در [github.com/new](https://github.com/new) یک ریپوی جدید با نام `TelegramBotManager` بسازید (**بدون** README یا لایسنس).
+2. در پوشه پروژه این دستورات را بزنید:
+
+```bash
+git init
+git add .
+git commit -m "Initial commit: Telegram Bot Manager"
+git branch -M main
+git remote add origin https://github.com/YOUR-USERNAME/TelegramBotManager.git
+git push -u origin main
+```
+
+### گرفتن APK بدون نصب Android Studio
+
+بعد از هر push، اکشن **Build APK** اجرا می‌شود:
+
+- تب **Actions** در ریپو → آخرین اجرا → بخش **Artifacts** → دانلود `TelegramBotManager-debug` یا `TelegramBotManager-release`.
+
+### انتشار خودکار در Releases
+
+کافیست یک تگ بزنید و push کنید:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+اکشن **Release** به‌طور خودکار APK را build کرده و در بخش **Releases** ریپو منتشر می‌کند. ✅
+
+---
+
+## 🗂 ساختار پروژه
+
+```
+TelegramBotManager/
+├── .github/workflows/          ← ساخت خودکار APK و انتشار Release
+├── app/src/main/
+│   ├── java/com/telegrambot/manager/
+│   │   ├── MainActivity.kt
+│   │   ├── data/
+│   │   │   ├── api/            ← TelegramApi (Retrofit) + TelegramRepo
+│   │   │   ├── model/          ← مدل‌های Bot API (Gson)
+│   │   │   └── store/          ← BotStore: ذخیره رمزنگاری‌شده توکن‌ها
+│   │   ├── ui/
+│   │   │   ├── components/     ← کامپوننت‌های مشترک
+│   │   │   ├── screens/        ← ۸ صفحه اپ
+│   │   │   └── theme/          ← تم رنگ پویا + فالبک تلگرامی
+│   │   └── vm/                 ← ViewModelها
+│   └── res/                    ← آیکون، تم، رشته‌ها
+├── build.gradle.kts
+└── settings.gradle.kts
+```
+
+## 🔒 امنیت
+
+- توکن‌ها با `EncryptedSharedPreferences` + کلید داخل **Android Keystore** رمزنگاری می‌شوند و هیچ‌جا (لاگ، سرور، حافظه ابری) ارسال یا ذخیره نمی‌شوند.
+- هر درخواست فقط مستقیماً به `https://api.telegram.org` زده می‌شود.
+- **هرگز** فایل `local.properties` یا APK منتشرشده خود را حاوی توکن واقعی قرار ندهید — توکن‌ها فقط داخل اپ وارد می‌شوند.
+
+## ❓ عیب‌یابی
+
+| مشکل | راه‌حل |
+|---|---|
+| خطای `401 Unauthorized` هنگام افزودن ربات | توکن اشتباه است؛ از BotFather با `/mybots` دوباره کپی کنید |
+| در «پیام‌های دریافتی» چیزی نمی‌آید | وب‌هوک فعال است؛ از ابزار وب‌هوک آن را حذف کنید |
+| خطای `chat not found` | `chat_id` را با «پیام‌های دریافتی» بررسی کنید؛ برای کانال، اپ را ادمین کانال کنید |
+| خطای وب‌هوک در تنظیم | آدرس باید https و روی پورت 443/80/88/8443 باشد |
+| دستورات ذخیره نمی‌شوند | فرمان فقط حروف کوچک `a-z`، عدد و `_` (تا ۳۲ کاراکتر) باشد |
+
+## 🧱 تکنولوژی‌ها
+
+Kotlin 1.9 · Jetpack Compose (BOM 2024.06) · Material 3 + Dynamic Color · Retrofit + OkHttp · Coroutines & StateFlow · EncryptedSharedPreferences · Navigation Compose
+
+## 📄 لایسنس
+
+این پروژه بدون لایسنس منتشر شده است. برای انتشار عمومی پیشنهاد می‌شود یک فایل `LICENSE` (مثلاً MIT) اضافه کنید.
