@@ -62,7 +62,6 @@ class AssistantViewModel(private val bot: Bot) : ViewModel() {
     var busy by mutableStateOf(false)
         private set
     var result by mutableStateOf<String?>(null)
-        private set
     var failure by mutableStateOf<String?>(null)
         private set
 
