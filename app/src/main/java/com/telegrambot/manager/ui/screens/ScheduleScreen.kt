@@ -92,7 +92,6 @@ class ScheduleViewModel(
     var syncing by mutableStateOf(false)
         private set
     var notice by mutableStateOf<String?>(null)
-        private set
     var error by mutableStateOf<String?>(null)
         private set
 
@@ -140,8 +139,6 @@ class ScheduleViewModel(
         scheduleStore.delete(id)
         reload()
     }
-
-    fun setNotice(n: String?) { notice = n }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -344,7 +341,7 @@ fun ScheduleScreen(bot: Bot, onBack: () -> Unit) {
                         text = ""
                         selected = emptySet()
                         manualIds = ""
-                        vm.setNotice("پیام زمان‌بندی شد ✓ در زمان مقرر ارسال می‌شود (اپ باید نصب بماند).")
+                        vm.notice = "پیام زمان‌بندی شد ✓ در زمان مقرر ارسال می‌شود (اپ باید نصب بماند)."
                     }
                 )
             }
