@@ -102,7 +102,7 @@ object HubApi {
                     route = obj.str("route"),
                     secret = obj.str("secret"),
                     url = obj.str("url"),
-                    botUsername = obj.path("bot")?.takeIf { it.isJsonObject }?.asJsonObject?.str("username") ?: ""
+                    botUsername = (obj.get("bot") as? com.google.gson.JsonObject)?.str("username") ?: ""
                 )
             }
             val err = obj.str("error").ifBlank {
