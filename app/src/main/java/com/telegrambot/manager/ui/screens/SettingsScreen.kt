@@ -132,7 +132,7 @@ class SettingsViewModel(private val appContext: android.content.Context) : ViewM
             try {
                 val id = withContext(Dispatchers.IO) { UpdateChecker.enqueueDownload(appCtx, info) }
                 withContext(Dispatchers.IO) { UpdateChecker.awaitDownloadAndInstall(appCtx, id, info) }
-                updateNote = st(
+                updateNote = L10n.str(
                     "اگر صفحه نصب باز نشد، فایل APK را از پوشه Downloads اجرا کنید.",
                     "If the installer didn't open, run the APK from the Downloads folder."
                 )
