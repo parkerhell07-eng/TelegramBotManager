@@ -8,6 +8,7 @@ import com.telegrambot.manager.data.api.Scheduler
 import com.telegrambot.manager.data.api.TelegramRepo
 import com.telegrambot.manager.data.model.Bot
 import com.telegrambot.manager.data.model.ScheduledMessage
+import com.telegrambot.manager.data.store.AutoReplyStore
 import com.telegrambot.manager.data.store.BotStore
 import com.telegrambot.manager.data.store.ChatStore
 import com.telegrambot.manager.data.store.ScheduleStore
@@ -33,6 +34,11 @@ class BotsViewModel(
     val message: StateFlow<String?> = _message.asStateFlow()
 
     init {
+        _bots.value = store.loadBots()
+    }
+
+    /** Re-reads the store after an encrypted backup restore. */
+    fun reload() {
         _bots.value = store.loadBots()
     }
 
@@ -89,8 +95,13 @@ class BotsViewModel(
             .forEach { Scheduler.cancelJob(appContext, it.id) }
         scheduleStore.removeBot(id)
         ChatStore.get(appContext).clear(id)
+        AutoReplyStore.get(appContext).removeBot(id)
         _bots.value = _bots.value.filterNot { it.id == id }
         store.saveBots(_bots.value)
+        // Drop the deleted bot's listener immediately (engine re-reads bots).
+        if (com.telegrambot.manager.EngineControl.running.value) {
+            com.telegrambot.manager.EngineControl.restart(appContext)
+        }
     }
 
     fun clearMessage() {

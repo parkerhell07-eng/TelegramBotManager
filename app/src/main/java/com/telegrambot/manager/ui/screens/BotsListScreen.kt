@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,8 +34,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,21 +50,36 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.telegrambot.manager.data.model.Bot
+import com.telegrambot.manager.data.store.SettingsStore
+import com.telegrambot.manager.data.update.UpdateChecker
+import com.telegrambot.manager.ui.components.UpdateOfferDialog
 import com.telegrambot.manager.ui.components.BotAvatar
 import com.telegrambot.manager.ui.components.PrimaryAction
 import com.telegrambot.manager.ui.components.copyToClipboard
 import com.telegrambot.manager.ui.theme.BlueGradient
 import com.telegrambot.manager.ui.theme.TgBlue
 import com.telegrambot.manager.vm.BotsViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun BotsListScreen(
     vm: BotsViewModel,
     onOpenBot: (String) -> Unit,
-    onAddBot: () -> Unit
+    onAddBot: () -> Unit,
+    onOpenSettings: () -> Unit = {}
 ) {
     val bots by vm.bots.collectAsState()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    // In-app update: a quiet check at most twice a day, skippable.
+    var updateInfo by remember { mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
+    var updateBusy by remember { mutableStateOf(false) }
+    var updateNote by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        val info = UpdateChecker.checkDue(context)
+        if (info != null) updateInfo = info
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -86,23 +107,33 @@ fun BotsListScreen(
                 .padding(padding)
         ) {
             // ── Hero header ──────────────────────────────────────────────
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 18.dp)
+                    .padding(horizontal = 20.dp, vertical = 18.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    "ربات‌های من",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    if (bots.isEmpty()) "مدیریت همه ربات‌های تلگرام در یک‌جا"
-                    else "${bots.size} ربات ذخیره‌شده روی این دستگاه",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "ربات‌های من",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        if (bots.isEmpty()) "مدیریت همه ربات‌های تلگرام در یک‌جا"
+                        else "${bots.size} ربات ذخیره‌شده روی این دستگاه",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = onOpenSettings) {
+                    Icon(
+                        Icons.Filled.Settings,
+                        contentDescription = "تنظیمات",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             if (bots.isEmpty()) {
@@ -165,6 +196,32 @@ fun BotsListScreen(
                 }
             }
         }
+    }
+
+    updateInfo?.let { info ->
+        UpdateOfferDialog(
+            info = info,
+            busy = updateBusy,
+            note = updateNote,
+            onDismiss = { if (!updateBusy) updateInfo = null },
+            onSkip = {
+                SettingsStore.get(context).setSkippedVersion(info.version)
+                updateInfo = null
+            },
+            onInstall = {
+                updateBusy = true
+                scope.launch {
+                    try {
+                        val id = UpdateChecker.enqueueDownload(context, info)
+                        UpdateChecker.awaitDownloadAndInstall(context, id, info)
+                        updateNote = "اگر صفحه نصب باز نشد، فایل APK را از پوشه Downloads اجرا کنید."
+                    } catch (e: Exception) {
+                        updateNote = "خطا: ${e.message ?: "نامشخص"}"
+                    }
+                    updateBusy = false
+                }
+            }
+        )
     }
 }
 

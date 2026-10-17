@@ -180,8 +180,15 @@ object TelegramRepo {
         api.sendLocation(apiUrl(token, "sendLocation"), chatId, latitude, longitude)
     }
 
-    suspend fun getUpdates(token: String, offset: Long?): ApiResult<List<TgUpdate>> =
-        safeCall { api.getUpdates(apiUrl(token, "getUpdates"), offset, 100) }
+    /**
+     * Pulls pending updates. [timeout] > 0 enables Telegram long polling:
+     * the server holds the request up to [timeout] seconds until an update
+     * (or the timeout) arrives — ideal for the background engine because it
+     * removes steady-state request storms. OkHttp read timeout is 40s, so
+     * keep timeout <= 30.
+     */
+    suspend fun getUpdates(token: String, offset: Long?, timeout: Int? = null): ApiResult<List<TgUpdate>> =
+        safeCall { api.getUpdates(apiUrl(token, "getUpdates"), offset, 100, timeout) }
 
     suspend fun setWebhook(token: String, url: String, dropPending: Boolean?): ApiResult<Boolean> =
         safeCall { api.setWebhook(apiUrl(token, "setWebhook"), url, dropPending) }

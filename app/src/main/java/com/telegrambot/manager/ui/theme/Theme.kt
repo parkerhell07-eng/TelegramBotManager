@@ -1,10 +1,24 @@
 package com.telegrambot.manager.ui.theme
 
+import android.app.Activity
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import com.telegrambot.manager.data.store.SettingsStore
+import com.telegrambot.manager.data.store.ThemeMode
+import com.telegrambot.manager.data.util.L10n
+import com.telegrambot.manager.data.util.LocalLang
 
 // ── Brand accents ────────────────────────────────────────────────────────────
 val TgBlue = Color(0xFF2AABEE)
@@ -46,6 +60,32 @@ private val DarkColors = darkColorScheme(
     onErrorContainer = Color(0xFFFFD9DE)
 )
 
+// ── Light surfaces ───────────────────────────────────────────────────────────
+private val LightColors = lightColorScheme(
+    primary = TgBlue,
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFD6F0FF),
+    onPrimaryContainer = Color(0xFF08344A),
+    secondary = PremiumPurple,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFE8E2FF),
+    onSecondaryContainer = Color(0xFF2E2660),
+    tertiary = Color(0xFF1E9E5C),
+    onTertiary = Color.White,
+    background = Color(0xFFF4F7FB),
+    onBackground = Color(0xFF17253D),
+    surface = Color.White,
+    onSurface = Color(0xFF17253D),
+    surfaceVariant = Color(0xFFE9F0F8),
+    onSurfaceVariant = Color(0xFF50657D),
+    outline = Color(0xFFC6D4E4),
+    outlineVariant = Color(0xFFDCE6F0),
+    error = Color(0xFFC6283F),
+    onError = Color.White,
+    errorContainer = Color(0xFFFFD9DE),
+    onErrorContainer = Color(0xFF4A1424)
+)
+
 // ── Shared gradients (used by buttons, avatars, hero headers) ────────────────
 val BlueGradient = Brush.linearGradient(listOf(Color(0xFF2AABEE), Color(0xFF1E8FD0)))
 val PurpleGradient = Brush.linearGradient(listOf(Color(0xFF8774E1), Color(0xFF5A8DEE)))
@@ -65,14 +105,41 @@ val AvatarGradients = listOf(
 )
 
 /**
- * App theme — a fixed "Telegram Premium" dark look so the whole app feels
- * cohesive, modern and professional regardless of system settings.
+ * App theme — "Telegram Premium" look in both a deep-dark and a light variant.
+ * The user picks SYSTEM / LIGHT / DARK in Settings; the choice is persisted in
+ * [SettingsStore] and survives restarts. The active language is provided here
+ * too so every screen can pick its copy via [st].
  */
 @Composable
 fun TelegramBotManagerTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = DarkColors,
-        typography = AppTypography,
-        content = content
-    )
+    val context = LocalContext.current
+    val settings = remember { SettingsStore.get(context) }
+    val mode by settings.theme.collectAsState()
+    val lang by settings.lang.collectAsState()
+
+    val dark = when (mode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+    val colors = if (dark) DarkColors else LightColors
+
+    // Match status-bar icon appearance to the chosen theme (not just the OS).
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as? Activity)?.window
+            if (window != null) {
+                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !dark
+            }
+        }
+    }
+
+    androidx.compose.runtime.CompositionLocalProvider(LocalLang provides lang) {
+        MaterialTheme(
+            colorScheme = colors,
+            typography = AppTypography,
+            content = content
+        )
+    }
 }

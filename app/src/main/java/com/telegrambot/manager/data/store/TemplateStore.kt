@@ -44,6 +44,11 @@ class TemplateStore(context: Context) {
         persist(load().filterNot { it.id == id })
     }
 
+    /** Replaces the whole list — used by encrypted backup restore. */
+    fun replaceAll(list: List<MsgTemplate>) = synchronized(lock) {
+        persist(list.take(MAX))
+    }
+
     private fun persist(list: List<MsgTemplate>) {
         try {
             file.writeText(gson.toJson(list))

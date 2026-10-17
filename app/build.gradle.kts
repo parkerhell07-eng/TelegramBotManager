@@ -13,8 +13,8 @@ android {
         applicationId = "com.telegrambot.manager"
         minSdk = 24
         targetSdk = 34
-        versionCode = 8
-        versionName = "1.7.0"
+        versionCode = 9
+        versionName = "2.0.0"
     }
 
     // Stable release signing so every update installs over the previous
@@ -73,6 +73,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true   // BuildConfig.VERSION_NAME powers the in-app updater
     }
 
     composeOptions {

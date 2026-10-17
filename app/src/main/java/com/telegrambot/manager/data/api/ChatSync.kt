@@ -1,5 +1,6 @@
 package com.telegrambot.manager.data.api
 
+import com.telegrambot.manager.data.engine.BotEngine
 import com.telegrambot.manager.data.model.ChatMsg
 import com.telegrambot.manager.data.model.ChatThread
 import com.telegrambot.manager.data.store.ChatStore
@@ -18,6 +19,10 @@ object ChatSync {
      * friendly Persian error message for the UI.
      */
     suspend fun syncOnce(token: String, botId: String, store: ChatStore): String? {
+        // While the background engine polls this bot, it is already merging
+        // every update into [store]; a second consumer here would only cause
+        // Telegram 409 conflicts. Local data refreshes by itself.
+        if (BotEngine.isPolling(botId)) return null
         val data = store.load(botId)
         val offset = if (data.offset > 0) data.offset else null
         return when (val r = TelegramRepo.getUpdates(token, offset)) {
@@ -25,7 +30,7 @@ object ChatSync {
                 if (r.data.isEmpty()) {
                     null
                 } else {
-                    merge(data, r.data, store, botId)
+                    ingest(botId, store, r.data)
                     null
                 }
             }
@@ -36,7 +41,15 @@ object ChatSync {
         }
     }
 
-    private suspend fun merge(
+    /**
+     * Merges raw updates into the local history (also used by the background
+     * engine so chats stay in sync no matter who pulled the updates).
+     */
+    fun ingest(botId: String, store: ChatStore, updates: List<com.telegrambot.manager.data.model.TgUpdate>) {
+        merge(store.load(botId), updates, store, botId)
+    }
+
+    private fun merge(
         data: ChatStore.BotChats,
         updates: List<com.telegrambot.manager.data.model.TgUpdate>,
         store: ChatStore,

@@ -84,6 +84,11 @@ class ScheduleStore(context: Context) {
         persist(all().filterNot { it.botId == botId })
     }
 
+    /** Replaces the whole list — used by encrypted backup restore. */
+    fun replaceAll(list: List<ScheduledMessage>) = synchronized(lock) {
+        persist(list.take(MAX))
+    }
+
     private fun persist(list: List<ScheduledMessage>) {
         try {
             file.writeText(gson.toJson(list))

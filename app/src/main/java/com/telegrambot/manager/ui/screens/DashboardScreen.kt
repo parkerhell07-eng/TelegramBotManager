@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Poll
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -55,6 +56,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.telegrambot.manager.data.api.TelegramRepo
+import com.telegrambot.manager.data.engine.BotEngine
 import com.telegrambot.manager.data.model.Bot
 import com.telegrambot.manager.data.model.TgUser
 import com.telegrambot.manager.ui.components.AppScaffold
@@ -64,6 +66,8 @@ import com.telegrambot.manager.ui.components.SectionCard
 import com.telegrambot.manager.ui.components.StatusMessage
 import com.telegrambot.manager.ui.components.ToolTile
 import com.telegrambot.manager.ui.components.copyToClipboard
+import androidx.compose.runtime.collectAsState
+import com.telegrambot.manager.data.util.st
 import com.telegrambot.manager.ui.theme.AccentGold
 import com.telegrambot.manager.ui.theme.AccentGreen
 import com.telegrambot.manager.ui.theme.AccentOrange
@@ -114,6 +118,7 @@ fun DashboardScreen(
     val error = vm.error
     val context = LocalContext.current
     var confirmDelete by remember { mutableStateOf(false) }
+    val pollingBots by BotEngine.polling.collectAsState()
 
     AppScaffold(
         title = "داشبورد ربات",
@@ -172,17 +177,33 @@ fun DashboardScreen(
                             color = Color.White.copy(alpha = 0.75f)
                         )
                         Spacer(Modifier.height(6.dp))
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(Color.White.copy(alpha = 0.14f))
-                                .padding(horizontal = 10.dp, vertical = 3.dp)
-                        ) {
-                            Text(
-                                "ربات متصل است",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.White
-                            )
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50))
+                                    .background(Color.White.copy(alpha = 0.14f))
+                                    .padding(horizontal = 10.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    "ربات متصل است",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White
+                                )
+                            }
+                            if (bot.id in pollingBots) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(50))
+                                        .background(AccentGreen.copy(alpha = 0.85f))
+                                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                                ) {
+                                    Text(
+                                        "پاسخ‌گویی خودکار فعال",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xFF062B15)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -224,6 +245,7 @@ fun DashboardScreen(
             )
 
             val tools = listOf(
+                Pair(Tools.autoreply, AccentGreen),
                 Pair(Tools.assistant, AccentGold),
                 Pair(Tools.chats, TgBlue),
                 Pair(Tools.broadcast, AccentOrange),
@@ -245,7 +267,7 @@ fun DashboardScreen(
                 ) {
                     rowTools.forEach { (tool, accent) ->
                         ToolTile(
-                            label = tool.label,
+                            label = st(tool.fa, tool.en),
                             icon = tool.icon,
                             accent = accent,
                             onClick = { onOpen(tool.route) },
@@ -258,15 +280,19 @@ fun DashboardScreen(
 
             SectionCard(title = "راهنمای سریع") {
                 Text(
-                    "۱. در ابزار «پیام‌های دریافتی»، شناسه چت (chat_id) مخاطبان را پیدا و کپی کنید.",
+                    "۱. در ابزار «پاسخگویی خودکار»، گوش‌دهی ۲۴ ساعته را روشن کنید تا ربات به /start و دستورها جواب بدهد.",
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
-                    "۲. برای استفاده از «پیام‌های دریافتی»، نباید وب‌هوک فعالی روی ربات باشد.",
+                    "۲. در ابزار «پیام‌های دریافتی»، شناسه چت (chat_id) مخاطبان را پیدا و کپی کنید.",
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
-                    "۳. برای ساخت منوی /commands از ابزار «دستورات ربات» استفاده کنید.",
+                    "۳. برای استفاده از «پیام‌های دریافتی»، نباید وب‌هوک فعالی روی ربات باشد.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    "۴. برای ساخت منوی /commands از ابزار «دستورات ربات» استفاده کنید.",
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -294,21 +320,27 @@ fun DashboardScreen(
     }
 }
 
-/** Static tool metadata: label, icon and navigation route. */
-private data class Tool(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
+/** Static tool metadata: Persian + English label, icon and navigation route. */
+private data class Tool(
+    val route: String,
+    val fa: String,
+    val en: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector
+)
 
 private object Tools {
-    val assistant = Tool("assistant", "دستیار هوشمند", Icons.Filled.AutoAwesome)
-    val chats = Tool("chats", "چت‌ها", Icons.Filled.Forum)
-    val broadcast = Tool("broadcast", "پیام همگانی", Icons.Filled.Campaign)
-    val members = Tool("members", "مدیریت اعضا", Icons.Filled.Groups)
-    val poll = Tool("poll", "نظرسنجی", Icons.Filled.Poll)
-    val schedule = Tool("schedule", "زمان‌بندی پیام", Icons.Filled.Schedule)
-    val stats = Tool("stats", "آمار ربات", Icons.Filled.BarChart)
-    val message = Tool("message", "ارسال پیام", Icons.Filled.Send)
-    val media = Tool("media", "ارسال مدیا", Icons.Filled.PhotoLibrary)
-    val commands = Tool("commands", "دستورات ربات", Icons.Filled.ListAlt)
-    val webhook = Tool("webhook", "وب‌هوک", Icons.Filled.CloudUpload)
-    val updates = Tool("updates", "پیام‌های دریافتی", Icons.Filled.NotificationsActive)
-    val profile = Tool("profile", "پروفایل ربات", Icons.Filled.Person)
+    val autoreply = Tool("autoreply", "پاسخگویی خودکار", "Auto responder", Icons.Filled.SupportAgent)
+    val assistant = Tool("assistant", "دستیار هوشمند", "Smart assistant", Icons.Filled.AutoAwesome)
+    val chats = Tool("chats", "چت‌ها", "Chats", Icons.Filled.Forum)
+    val broadcast = Tool("broadcast", "پیام همگانی", "Broadcast", Icons.Filled.Campaign)
+    val members = Tool("members", "مدیریت اعضا", "Members", Icons.Filled.Groups)
+    val poll = Tool("poll", "نظرسنجی", "Polls", Icons.Filled.Poll)
+    val schedule = Tool("schedule", "زمان‌بندی پیام", "Scheduled messages", Icons.Filled.Schedule)
+    val stats = Tool("stats", "آمار ربات", "Bot statistics", Icons.Filled.BarChart)
+    val message = Tool("message", "ارسال پیام", "Send message", Icons.Filled.Send)
+    val media = Tool("media", "ارسال مدیا", "Send media", Icons.Filled.PhotoLibrary)
+    val commands = Tool("commands", "دستورات ربات", "Bot commands", Icons.Filled.ListAlt)
+    val webhook = Tool("webhook", "وب‌هوک", "Webhook", Icons.Filled.CloudUpload)
+    val updates = Tool("updates", "پیام‌های دریافتی", "Incoming updates", Icons.Filled.NotificationsActive)
+    val profile = Tool("profile", "پروفایل ربات", "Bot profile", Icons.Filled.Person)
 }

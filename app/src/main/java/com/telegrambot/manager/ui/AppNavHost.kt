@@ -13,6 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.telegrambot.manager.ui.components.LoadingBox
 import com.telegrambot.manager.ui.screens.AddBotScreen
+import com.telegrambot.manager.ui.screens.AutoReplyScreen
 import com.telegrambot.manager.ui.screens.AssistantScreen
 import com.telegrambot.manager.ui.screens.BotsListScreen
 import com.telegrambot.manager.ui.screens.BroadcastScreen
@@ -26,6 +27,7 @@ import com.telegrambot.manager.ui.screens.MessageScreen
 import com.telegrambot.manager.ui.screens.PollScreen
 import com.telegrambot.manager.ui.screens.ProfileScreen
 import com.telegrambot.manager.ui.screens.ScheduleScreen
+import com.telegrambot.manager.ui.screens.SettingsScreen
 import com.telegrambot.manager.ui.screens.StatsScreen
 import com.telegrambot.manager.ui.screens.UpdatesScreen
 import com.telegrambot.manager.ui.screens.WebhookScreen
@@ -59,7 +61,15 @@ fun AppNavHost() {
             BotsListScreen(
                 vm = vm,
                 onOpenBot = { id -> navController.navigate("bot/$id") },
-                onAddBot = { navController.navigate("addBot") }
+                onAddBot = { navController.navigate("addBot") },
+                onOpenSettings = { navController.navigate("settings") }
+            )
+        }
+
+        composable("settings") {
+            SettingsScreen(
+                botsVm = vm,
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -181,6 +191,11 @@ fun AppNavHost() {
         composable("bot/{botId}/updates") { entry ->
             val bot = vm.botById(entry.arguments?.getString("botId") ?: "")
             if (bot == null) LoadingBox() else UpdatesScreen(bot = bot, onBack = { navController.popBackStack() })
+        }
+
+        composable("bot/{botId}/autoreply") { entry ->
+            val bot = vm.botById(entry.arguments?.getString("botId") ?: "")
+            if (bot == null) LoadingBox() else AutoReplyScreen(bot = bot, onBack = { navController.popBackStack() })
         }
 
         composable("bot/{botId}/profile") { entry ->

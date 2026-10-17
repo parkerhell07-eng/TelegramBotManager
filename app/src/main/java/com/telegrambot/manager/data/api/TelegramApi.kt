@@ -97,7 +97,8 @@ interface TelegramApi {
     suspend fun getUpdates(
         @Url url: String,
         @Field("offset") offset: Long?,
-        @Field("limit") limit: Int?
+        @Field("limit") limit: Int?,
+        @Field("timeout") timeout: Int?
     ): TgResponse<List<TgUpdate>>
 
     @FormUrlEncoded
