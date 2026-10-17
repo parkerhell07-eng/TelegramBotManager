@@ -23,8 +23,6 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -35,7 +33,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -56,6 +53,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.telegrambot.manager.data.api.ChatSync
 import com.telegrambot.manager.data.api.Scheduler
+import com.telegrambot.manager.data.util.Jalali
 import com.telegrambot.manager.data.model.Bot
 import com.telegrambot.manager.data.model.ChatThread
 import com.telegrambot.manager.data.model.ScheduledMessage
@@ -64,6 +62,7 @@ import com.telegrambot.manager.data.store.ScheduleStore
 import com.telegrambot.manager.data.store.TemplateStore
 import com.telegrambot.manager.ui.components.AppScaffold
 import com.telegrambot.manager.ui.components.EmptyHint
+import com.telegrambot.manager.ui.components.JalaliDatePickerDialog
 import com.telegrambot.manager.ui.components.LabeledField
 import com.telegrambot.manager.ui.components.PrimaryAction
 import com.telegrambot.manager.ui.components.SectionCard
@@ -285,6 +284,12 @@ fun ScheduleScreen(bot: Bot, onBack: () -> Unit) {
                         Text(formatHm(chosenAt), maxLines = 1)
                     }
                 }
+                Text(
+                    "ارسال در: ${formatPersianDateTime(chosenAt)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TgBlue,
+                    fontWeight = FontWeight.SemiBold
+                )
 
                 Row(
                     modifier = Modifier
@@ -387,23 +392,15 @@ fun ScheduleScreen(bot: Bot, onBack: () -> Unit) {
         }
     }
 
-    // ── Date picker ──────────────────────────────────────────────────────
+    // ── Date picker (Persian calendar) ───────────────────────────────────
     if (showDate) {
-        val state = rememberDatePickerState(initialSelectedDateMillis = chosenAt)
-        DatePickerDialog(
-            onDismissRequest = { showDate = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    state.selectedDateMillis?.let { millis ->
-                        chosenAt = combineDate(chosenAt, millis)
-                    }
-                    showDate = false
-                }) { Text("تأیید") }
+        JalaliDatePickerDialog(
+            initialAt = chosenAt,
+            onPick = { jy, jm, jd ->
+                chosenAt = Jalali.toMillis(jy, jm, jd, chosenAt)
             },
-            dismissButton = {
-                TextButton(onClick = { showDate = false }) { Text("انصراف") }
-            }
-        ) { DatePicker(state = state) }
+            onDismiss = { showDate = false }
+        )
     }
 
     // ── Time picker ──────────────────────────────────────────────────────
@@ -591,22 +588,6 @@ private fun PresetChip(label: String, id: Int, onPick: (Long) -> Unit) {
     )
 }
 
-private fun combineDate(currentAt: Long, dateMillis: Long): Long {
-    // DatePicker returns UTC midnight; convert through a local Calendar.
-    val utc = Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
-        timeInMillis = dateMillis
-    }
-    val cur = Calendar.getInstance().apply { timeInMillis = currentAt }
-    val out = Calendar.getInstance().apply {
-        set(utc.get(Calendar.YEAR), utc.get(Calendar.MONTH), utc.get(Calendar.DAY_OF_MONTH))
-        set(Calendar.HOUR_OF_DAY, cur.get(Calendar.HOUR_OF_DAY))
-        set(Calendar.MINUTE, cur.get(Calendar.MINUTE))
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-    }
-    return out.timeInMillis
-}
-
 private fun combineTime(currentAt: Long, hour: Int, minute: Int): Long {
     val cur = Calendar.getInstance().apply { timeInMillis = currentAt }
     val out = Calendar.getInstance().apply {
@@ -626,57 +607,11 @@ private fun faNum(n: Long): String =
 
 private fun faNum(n: Int): String = faNum(n.toLong())
 
-/** Jalali (Solar Hijri) month names. */
-private val jalaliMonths = listOf(
-    "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور",
-    "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"
-)
+private fun formatPersianDate(millis: Long): String = Jalali.formatDate(millis)
 
-/** Gregorian → Jalali (standard 33-year cycle algorithm). Returns (jy, jm, jd). */
-private fun gregorianToJalali(gy: Int, gm: Int, gd: Int): Triple<Int, Int, Int> {
-    val gDaysInMonth = intArrayOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
-    var gy2 = if (gm > 2) gy + 1 else gy
-    var days = 355666 + (365 * gy) + ((gy2 + 3) / 4) - ((gy2 + 99) / 100) +
-        ((gy2 + 399) / 400) + gd + gDaysInMonth.take(gm - 1).sum()
-    var jy = -1595 + (33 * (days / 12053))
-    days %= 12053
-    jy += 4 * (days / 1461)
-    days %= 1461
-    if (days > 365) {
-        jy += (days - 1) / 365
-        days = (days - 1) % 365
-    }
-    return if (days < 186) {
-        Triple(jy, 1 + (days / 31).toInt(), 1 + (days % 31).toInt())
-    } else {
-        Triple(jy, 7 + ((days - 186) / 30).toInt(), 1 + ((days - 186) % 30).toInt())
-    }
-}
+private fun formatPersianDateTime(millis: Long): String = Jalali.formatDateTime(millis)
 
-private fun jalaliParts(millis: Long): Triple<Int, Int, Int> {
-    val c = Calendar.getInstance().apply { timeInMillis = millis }
-    return gregorianToJalali(
-        c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH)
-    )
-}
-
-private fun formatPersianDate(millis: Long): String = try {
-    val (jy, jm, jd) = jalaliParts(millis)
-    "${faNum(jd)} ${jalaliMonths[jm - 1]} ${faNum(jy)}"
-} catch (e: Exception) {
-    java.text.SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(java.util.Date(millis))
-}
-
-private fun formatPersianDateTime(millis: Long): String = try {
-    val (jy, jm, jd) = jalaliParts(millis)
-    val weekday = java.text.SimpleDateFormat("EEEE", Locale("fa")).format(java.util.Date(millis))
-    "$weekday ${faNum(jd)} ${jalaliMonths[jm - 1]} ${faNum(jy)}، ساعت ${formatHm(millis)}"
-} catch (e: Exception) {
-    java.text.SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault()).format(java.util.Date(millis))
-}
-
-private fun formatHm(millis: Long): String =
-    java.text.SimpleDateFormat("HH:mm", Locale.getDefault()).format(java.util.Date(millis))
+private fun formatHm(millis: Long): String = Jalali.formatHm(millis)
 
 private fun formatRemaining(ms: Long): String {
     val totalMin = ms / 60_000

@@ -13,6 +13,7 @@ val AccentTeal = Color(0xFF2BD9C7)
 val AccentOrange = Color(0xFFFFA45C)
 val AccentPink = Color(0xFFFF6BA8)
 val AccentGreen = Color(0xFF5BDB8B)
+val AccentGold = Color(0xFFFFC857)
 
 // ── Dark premium surfaces ────────────────────────────────────────────────────
 private val Bg = Color(0xFF0A1120)

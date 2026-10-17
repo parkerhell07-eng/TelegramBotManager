@@ -13,6 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.telegrambot.manager.ui.components.LoadingBox
 import com.telegrambot.manager.ui.screens.AddBotScreen
+import com.telegrambot.manager.ui.screens.AssistantScreen
 import com.telegrambot.manager.ui.screens.BotsListScreen
 import com.telegrambot.manager.ui.screens.BroadcastScreen
 import com.telegrambot.manager.ui.screens.ChatThreadScreen
@@ -128,6 +129,14 @@ fun AppNavHost() {
         composable("bot/{botId}/poll") { entry ->
             val bot = vm.botById(entry.arguments?.getString("botId") ?: "")
             if (bot == null) LoadingBox() else PollScreen(
+                bot = bot,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("bot/{botId}/assistant") { entry ->
+            val bot = vm.botById(entry.arguments?.getString("botId") ?: "")
+            if (bot == null) LoadingBox() else AssistantScreen(
                 bot = bot,
                 onBack = { navController.popBackStack() }
             )

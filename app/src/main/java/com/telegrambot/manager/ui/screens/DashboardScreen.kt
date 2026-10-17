@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.BarChart
@@ -63,6 +64,7 @@ import com.telegrambot.manager.ui.components.SectionCard
 import com.telegrambot.manager.ui.components.StatusMessage
 import com.telegrambot.manager.ui.components.ToolTile
 import com.telegrambot.manager.ui.components.copyToClipboard
+import com.telegrambot.manager.ui.theme.AccentGold
 import com.telegrambot.manager.ui.theme.AccentGreen
 import com.telegrambot.manager.ui.theme.AccentOrange
 import com.telegrambot.manager.ui.theme.AccentPink
@@ -222,6 +224,7 @@ fun DashboardScreen(
             )
 
             val tools = listOf(
+                Pair(Tools.assistant, AccentGold),
                 Pair(Tools.chats, TgBlue),
                 Pair(Tools.broadcast, AccentOrange),
                 Pair(Tools.members, AccentTeal),
@@ -295,6 +298,7 @@ fun DashboardScreen(
 private data class Tool(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
 
 private object Tools {
+    val assistant = Tool("assistant", "دستیار هوشمند", Icons.Filled.AutoAwesome)
     val chats = Tool("chats", "چت‌ها", Icons.Filled.Forum)
     val broadcast = Tool("broadcast", "پیام همگانی", Icons.Filled.Campaign)
     val members = Tool("members", "مدیریت اعضا", Icons.Filled.Groups)
