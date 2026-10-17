@@ -612,6 +612,38 @@ fun CloudScreen(bot: Bot, onBack: () -> Unit) {
             Spacer(Modifier.padding(bottom = 12.dp))
         }
 
+        if (vm.serverDialog) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { vm.serverDialog = false },
+                shape = RoundedCornerShape(20.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
+                title = { Text(st("آدرس کلود آماده", "Ready cloud address")) },
+                text = {
+                    Column {
+                        Text(
+                            st(
+                                "پیش‌فرض را دست نزنید مگر اینکه سرور خودتان را مستقر کرده باشید یا اپ‌ساز آدرس جدیدی اعلام کرده باشد. آدرس باید با https:// شروع شود.",
+                                "Keep the default unless you deployed your own hub or the app owner published a new address. The address must start with https://."
+                            ),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Spacer(Modifier.padding(top = 8.dp))
+                        LabeledField(
+                            value = vm.hubUrlField,
+                            onValueChange = { vm.hubUrlField = it },
+                            label = st("مثلاً https://tbm-hub.example.workers.dev", "e.g. https://tbm-hub.example.workers.dev")
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { vm.saveHubUrl() }) { Text(st("ذخیره", "Save")) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { vm.serverDialog = false }) { Text(st("انصراف", "Cancel")) }
+                }
+            )
+        }
+
         if (vm.confirmDisable) {
             AlertDialogDisable(
                 botName = bot.name,

@@ -13,8 +13,16 @@ android {
         applicationId = "com.telegrambot.manager"
         minSdk = 24
         targetSdk = 34
-        versionCode = 10
-        versionName = "2.1.0"
+        versionCode = 11
+        versionName = "2.2.0"
+
+        // Base URL of the app's ready-made cloud hub ("کلود آماده").
+        // Override for self-hosted hubs: ./gradlew -PhubUrl=https://... or edit here.
+        buildConfigField(
+            "String",
+            "HUB_URL",
+            "\"${project.findProperty("hubUrl") ?: "https://tbm-hub.parkerhell07-eng.workers.dev"}\""
+        )
     }
 
     // Stable release signing so every update installs over the previous

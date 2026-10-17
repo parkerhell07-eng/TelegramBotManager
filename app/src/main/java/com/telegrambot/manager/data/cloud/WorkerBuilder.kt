@@ -47,6 +47,9 @@ object WorkerBuilder {
 
     private val gson: Gson = GsonBuilder().disableHtmlEscaping().create()
 
+    /** Serializes the config for the shared hub (same shape as @@CFG@@). */
+    fun cfgJson(cfg: WConfig): String = gson.toJson(cfg)
+
     fun build(cfg: WConfig, secret: String, botToken: String): String {
         val cfgJson = gson.toJson(cfg)
         val secretJson = gson.toJson(secret)
@@ -122,6 +125,11 @@ async function handle(update) {
       const rt = msg.reply_to_message;
       let dest = 0;
       if (rt.forward_from && rt.forward_from.id) dest = rt.forward_from.id;
+      if (!dest && rt.text) {
+        // our copies are plain texts with a "chat_id: N" line
+        const m = String(rt.text).match(/chat_id:\s*(-?\d+)/);
+        if (m) dest = parseInt(m[1], 10);
+      }
       if (dest) {
         await api("sendMessage", { chat_id: dest, text: CFG.relayPrefix + text });
       } else {

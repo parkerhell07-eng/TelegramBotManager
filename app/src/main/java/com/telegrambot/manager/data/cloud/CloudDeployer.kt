@@ -1,6 +1,7 @@
 package com.telegrambot.manager.data.cloud
 
 import android.content.Context
+import com.telegrambot.manager.BuildConfig
 import com.telegrambot.manager.EngineControl
 import com.telegrambot.manager.data.api.TelegramRepo
 import com.telegrambot.manager.data.model.Bot
@@ -16,11 +17,15 @@ import org.json.JSONObject
 import java.security.SecureRandom
 
 /**
- * Orchestrates the one-tap cloud deployment:
+ * Orchestrates cloud deployment in both modes:
  *
- *   verify Cloudflare token → resolve account → read workers.dev subdomain →
- *   build + upload the Worker → enable the public route → setWebhook with a
- *   secret token → publish the command menu → park the phone engine.
+ *  - [deployShared] — the app's READY cloud ("کلود آماده"): registers the bot
+ *    on the shared hub (no Cloudflare account, no token setup for the user),
+ *    then setWebhook + command menu + park the phone engine.
+ *  - [deploy] — the advanced personal mode: verify Cloudflare token → resolve
+ *    account → read workers.dev subdomain → build + upload the Worker →
+ *    enable the public route → setWebhook with a secret token → publish the
+ *    command menu → park the phone engine.
  *
  * Everything runs on Dispatchers.IO and reports progress strings for the UI.
  */
@@ -39,9 +44,99 @@ object CloudDeployer {
         return sb.toString()
     }
 
-    fun webhookUrl(cfg: BotCloud): String = cfg.url.trimEnd('/') + "/hook"
+    /** Telegram webhook target for either mode. */
+    fun webhookUrl(cfg: BotCloud): String =
+        if (cfg.isShared) cfg.url.trimEnd('/') + "/hook/" + cfg.route
+        else cfg.url.trimEnd('/') + "/hook"
 
-    // ── Deploy / sync rules ──────────────────────────────────────────────
+    /**
+     * Base URL of the ready hub: in-app override wins, otherwise the URL
+     * baked into the build (BuildConfig.HUB_URL).
+     */
+    fun hubBase(ctx: Context): String {
+        val override = CloudStore.get(ctx).creds().hubUrlOverride.trim()
+        return HubApi.normalizeBase(if (override.isNotBlank()) override else BuildConfig.HUB_URL)
+    }
+
+    // ── Ready cloud (shared hub) — zero setup for the user ──────────────
+
+    /**
+     * One-tap deployment on the app's shared hub: register (token encrypted
+     * server-side) → setWebhook with the returned secret → command menu →
+     * park the phone engine. No Cloudflare account involved.
+     */
+    suspend fun deployShared(
+        ctx: Context,
+        bot: Bot,
+        adminChatId: Long,
+        progress: (String) -> Unit
+    ): Result = withContext(Dispatchers.IO) {
+        val base = hubBase(ctx)
+        val cfgReply = AutoReplyStore.get(ctx).load(bot.id)
+
+        progress(L10n.str("اتصال به کلود آماده…", "Connecting to the ready cloud…"))
+        val reg = HubApi.register(
+            base, bot.token, adminChatId,
+            WorkerBuilder.cfgJson(buildWConfig(bot, cfgReply, adminChatId))
+        )
+        if (!reg.ok || reg.route.isBlank() || reg.secret.isBlank()) {
+            val hint = L10n.str(
+                " — اگر سرور اپ مستقر نشده، صاحب اپ باید یک‌بار «کلود آماده» را مستقر کند (cloud/hub/README.md) یا از حالت پیشرفته با حساب کلادفلر خودتان استفاده کنید.",
+                " — if the app server is not deployed yet, the app owner must deploy the ready hub once (cloud/hub/README.md), or use the advanced mode with your own Cloudflare account."
+            )
+            return@withContext Result.Err((reg.message ?: L10n.str("ثبت ربات روی کلود آماده ناموفق بود.", "Bot registration on the ready cloud failed.")) + hint)
+        }
+
+        progress(L10n.str("تنظیم وب‌هوک تلگرام…", "Setting the Telegram webhook…"))
+        val store = CloudStore.get(ctx)
+        val hook = webhookUrl(
+            BotCloud(mode = BotCloud.MODE_SHARED, url = base, route = reg.route)
+        )
+        when (val sw = TelegramRepo.setWebhook(
+            bot.token, hook, dropPending = false,
+            secretToken = reg.secret, allowedUpdates = "[\"message\"]"
+        )) {
+            is TelegramRepo.ApiResult.Failure -> return@withContext Result.Err(
+                L10n.str("تنظیم وب‌هوک ناموفق بود: ", "Setting the webhook failed: ") + sw.message
+            )
+            else -> {}
+        }
+
+        progress(L10n.str("ثبت منوی دستورها…", "Publishing the command menu…"))
+        syncMenu(bot, cfgReply)
+
+        store.save(
+            BotCloud(
+                botId = bot.id,
+                enabled = true,
+                mode = BotCloud.MODE_SHARED,
+                url = base,
+                route = reg.route,
+                secret = reg.secret,
+                adminChatId = adminChatId,
+                deployedAt = System.currentTimeMillis()
+            )
+        )
+
+        // The phone engine must stop long-polling this bot (webhook is live).
+        EngineControl.restart(ctx)
+
+        Result.Ok(hook)
+    }
+
+    /** Best-effort removal of a shared-mode bot from the hub (bot deleted). */
+    fun unregisterShared(ctx: Context, botId: String) {
+        try {
+            val cfg = CloudStore.get(ctx).load(botId)
+            if (cfg.enabled && cfg.isShared && cfg.route.isNotBlank() && cfg.secret.isNotBlank()) {
+                HubApi.unregister(hubBase(ctx), cfg.route, cfg.secret)
+            }
+        } catch (e: Exception) {
+            // best-effort only
+        }
+    }
+
+    // ── Personal mode: deploy / sync rules ──────────────────────────────
 
     suspend fun deploy(
         ctx: Context,
@@ -152,7 +247,7 @@ object CloudDeployer {
         Result.Ok(url)
     }
 
-    /** Re-uploads the Worker with the CURRENT rules (after edits in the app). */
+    /** Re-pushes the CURRENT rules to the cloud (after edits in the app). */
     suspend fun syncRules(
         ctx: Context,
         bot: Bot,
@@ -167,6 +262,19 @@ object CloudDeployer {
                 )
             )
         }
+        val cfgReply = AutoReplyStore.get(ctx).load(bot.id)
+        val wcfg = buildWConfig(bot, cfgReply, cfg.adminChatId)
+        if (cfg.isShared) {
+            // Shared hub: a lightweight JSON push — no worker re-upload needed.
+            return withContext(Dispatchers.IO) {
+                progress(L10n.str("همگام‌سازی قوانین با کلود آماده…", "Syncing rules with the ready cloud…"))
+                val up = HubApi.updateRules(hubBase(ctx), cfg.route, cfg.secret, WorkerBuilder.cfgJson(wcfg))
+                if (up.ok) Result.Ok(webhookUrl(cfg))
+                else Result.Err(
+                    L10n.str("به‌روزرسانی قوانین ناموفق بود: ", "Rule update failed: ") + (up.message ?: "")
+                )
+            }
+        }
         return deploy(ctx, bot, cfg.adminChatId, progress)
     }
 
@@ -180,6 +288,14 @@ object CloudDeployer {
         }
         val store = CloudStore.get(ctx)
         val cfg = store.load(bot.id)
+        // Shared mode: wipe the bot's data (encrypted token + rules) off the hub.
+        if (cfg.isShared && cfg.route.isNotBlank() && cfg.secret.isNotBlank()) {
+            try {
+                HubApi.unregister(hubBase(ctx), cfg.route, cfg.secret)
+            } catch (e: Exception) {
+                // best-effort: hub may be unreachable; local config is cleared anyway
+            }
+        }
         store.save(cfg.copy(enabled = false))
         EngineControl.restart(ctx)
         null

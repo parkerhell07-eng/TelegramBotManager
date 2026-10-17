@@ -99,9 +99,13 @@ class BotsViewModel(
         AutoReplyStore.get(appContext).removeBot(id)
         com.telegrambot.manager.data.store.CloudStore.get(appContext).removeBot(id)
         // Best-effort: release the webhook so Telegram stops POSTing to a
-        // worker whose config no longer exists on the phone.
+        // worker whose config no longer exists on the phone; shared-mode bots
+        // are also wiped off the ready hub (encrypted token + rules).
         if (bot != null) {
-            viewModelScope.launch { TelegramRepo.deleteWebhook(bot.token, null) }
+            viewModelScope.launch {
+                com.telegrambot.manager.data.cloud.CloudDeployer.unregisterShared(appContext, id)
+                TelegramRepo.deleteWebhook(bot.token, null)
+            }
         }
         _bots.value = _bots.value.filterNot { it.id == id }
         store.saveBots(_bots.value)
