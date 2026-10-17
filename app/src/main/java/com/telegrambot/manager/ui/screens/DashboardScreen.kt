@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Groups
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Poll
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -224,6 +226,8 @@ fun DashboardScreen(
                 Pair(Tools.broadcast, AccentOrange),
                 Pair(Tools.members, AccentTeal),
                 Pair(Tools.poll, AccentPink),
+                Pair(Tools.schedule, AccentGreen),
+                Pair(Tools.stats, PremiumPurple),
                 Pair(Tools.message, TgBlue),
                 Pair(Tools.media, PremiumPurple),
                 Pair(Tools.commands, AccentTeal),
@@ -295,6 +299,8 @@ private object Tools {
     val broadcast = Tool("broadcast", "پیام همگانی", Icons.Filled.Campaign)
     val members = Tool("members", "مدیریت اعضا", Icons.Filled.Groups)
     val poll = Tool("poll", "نظرسنجی", Icons.Filled.Poll)
+    val schedule = Tool("schedule", "زمان‌بندی پیام", Icons.Filled.Schedule)
+    val stats = Tool("stats", "آمار ربات", Icons.Filled.BarChart)
     val message = Tool("message", "ارسال پیام", Icons.Filled.Send)
     val media = Tool("media", "ارسال مدیا", Icons.Filled.PhotoLibrary)
     val commands = Tool("commands", "دستورات ربات", Icons.Filled.ListAlt)

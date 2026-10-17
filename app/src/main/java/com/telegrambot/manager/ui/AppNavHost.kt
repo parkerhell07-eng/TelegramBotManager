@@ -24,6 +24,8 @@ import com.telegrambot.manager.ui.screens.MembersScreen
 import com.telegrambot.manager.ui.screens.MessageScreen
 import com.telegrambot.manager.ui.screens.PollScreen
 import com.telegrambot.manager.ui.screens.ProfileScreen
+import com.telegrambot.manager.ui.screens.ScheduleScreen
+import com.telegrambot.manager.ui.screens.StatsScreen
 import com.telegrambot.manager.ui.screens.UpdatesScreen
 import com.telegrambot.manager.ui.screens.WebhookScreen
 import com.telegrambot.manager.vm.BotsViewModel
@@ -126,6 +128,22 @@ fun AppNavHost() {
         composable("bot/{botId}/poll") { entry ->
             val bot = vm.botById(entry.arguments?.getString("botId") ?: "")
             if (bot == null) LoadingBox() else PollScreen(
+                bot = bot,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("bot/{botId}/schedule") { entry ->
+            val bot = vm.botById(entry.arguments?.getString("botId") ?: "")
+            if (bot == null) LoadingBox() else ScheduleScreen(
+                bot = bot,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("bot/{botId}/stats") { entry ->
+            val bot = vm.botById(entry.arguments?.getString("botId") ?: "")
+            if (bot == null) LoadingBox() else StatsScreen(
                 bot = bot,
                 onBack = { navController.popBackStack() }
             )

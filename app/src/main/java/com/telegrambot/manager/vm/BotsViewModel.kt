@@ -4,9 +4,13 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.telegrambot.manager.data.api.Scheduler
 import com.telegrambot.manager.data.api.TelegramRepo
 import com.telegrambot.manager.data.model.Bot
+import com.telegrambot.manager.data.model.ScheduledMessage
 import com.telegrambot.manager.data.store.BotStore
+import com.telegrambot.manager.data.store.ChatStore
+import com.telegrambot.manager.data.store.ScheduleStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +18,10 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 /** Shared, activity-scoped ViewModel managing the list of saved bots. */
-class BotsViewModel(private val store: BotStore) : ViewModel() {
+class BotsViewModel(
+    private val store: BotStore,
+    private val appContext: Context
+) : ViewModel() {
 
     private val _bots = MutableStateFlow<List<Bot>>(emptyList())
     val bots: StateFlow<List<Bot>> = _bots.asStateFlow()
@@ -73,6 +80,15 @@ class BotsViewModel(private val store: BotStore) : ViewModel() {
     }
 
     fun deleteBot(id: String) {
+        // Cancel pending scheduled sends and clear this bot's local data.
+        val scheduleStore = ScheduleStore.get(appContext)
+        scheduleStore.all()
+            .filter {
+                it.botId == id && it.status == ScheduledMessage.STATUS_PENDING
+            }
+            .forEach { Scheduler.cancelJob(appContext, it.id) }
+        scheduleStore.removeBot(id)
+        ChatStore.get(appContext).clear(id)
         _bots.value = _bots.value.filterNot { it.id == id }
         store.saveBots(_bots.value)
     }
@@ -86,7 +102,7 @@ class BotsViewModel(private val store: BotStore) : ViewModel() {
 class BotsViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        BotsViewModel(BotStore.get(context)) as T
+        BotsViewModel(BotStore.get(context), context.applicationContext) as T
 }
 
 /** Generic factory for per-bot, per-screen ViewModels. */

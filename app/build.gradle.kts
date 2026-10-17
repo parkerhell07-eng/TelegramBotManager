@@ -13,8 +13,8 @@ android {
         applicationId = "com.telegrambot.manager"
         minSdk = 24
         targetSdk = 34
-        versionCode = 6
-        versionName = "1.5.0"
+        versionCode = 7
+        versionName = "1.6.0"
     }
 
     // Stable release signing so every update installs over the previous
@@ -112,6 +112,9 @@ dependencies {
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+
+    // Background scheduled messages
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     // Encrypted storage for bot tokens
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
