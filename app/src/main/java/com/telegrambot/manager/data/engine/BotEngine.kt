@@ -12,6 +12,7 @@ import com.telegrambot.manager.data.store.BotStore
 import com.telegrambot.manager.data.store.ChatStore
 import com.telegrambot.manager.data.util.L10n
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
