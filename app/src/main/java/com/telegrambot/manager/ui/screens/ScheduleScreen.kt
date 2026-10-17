@@ -381,6 +381,7 @@ fun ScheduleScreen(bot: Bot, onBack: () -> Unit) {
                 history.sortedByDescending { it.sentAt }.forEach { msg ->
                     ScheduleCard(
                         msg = msg,
+                        now = now,
                         onCancel = null,
                         onDelete = { vm.delete(msg.id) }
                     )
@@ -626,22 +627,53 @@ private fun combineTime(currentAt: Long, hour: Int, minute: Int): Long {
 private fun faNum(n: Long): String =
     NumberFormat.getInstance(Locale("fa")).format(n)
 
+private fun faNum(n: Int): String = faNum(n.toLong())
+
+/** Jalali (Solar Hijri) month names. */
+private val jalaliMonths = listOf(
+    "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور",
+    "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"
+)
+
+/** Gregorian → Jalali (standard 33-year cycle algorithm). Returns (jy, jm, jd). */
+private fun gregorianToJalali(gy: Int, gm: Int, gd: Int): Triple<Int, Int, Int> {
+    val gDaysInMonth = intArrayOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+    var gy2 = if (gm > 2) gy + 1 else gy
+    var days = 355666 + (365 * gy) + ((gy2 + 3) / 4) - ((gy2 + 99) / 100) +
+        ((gy2 + 399) / 400) + gd + gDaysInMonth.take(gm - 1).sum()
+    var jy = -1595 + (33 * (days / 12053))
+    days %= 12053
+    jy += 4 * (days / 1461)
+    days %= 1461
+    if (days > 365) {
+        jy += (days - 1) / 365
+        days = (days - 1) % 365
+    }
+    return if (days < 186) {
+        Triple(jy, 1 + (days / 31).toInt(), 1 + (days % 31).toInt())
+    } else {
+        Triple(jy, 7 + ((days - 186) / 30).toInt(), 1 + ((days - 186) % 30).toInt())
+    }
+}
+
+private fun jalaliParts(millis: Long): Triple<Int, Int, Int> {
+    val c = Calendar.getInstance().apply { timeInMillis = millis }
+    return gregorianToJalali(
+        c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH)
+    )
+}
+
 private fun formatPersianDate(millis: Long): String = try {
-    val pc = android.icu.util.PersianCalendar()
-    pc.timeInMillis = millis
-    val fmt = android.icu.text.SimpleDateFormat("d MMMM y", android.icu.util.ULocale("fa"))
-    fmt.calendar = pc
-    fmt.format(pc.time)
+    val (jy, jm, jd) = jalaliParts(millis)
+    "${faNum(jd)} ${jalaliMonths[jm - 1]} ${faNum(jy)}"
 } catch (e: Exception) {
     java.text.SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(java.util.Date(millis))
 }
 
 private fun formatPersianDateTime(millis: Long): String = try {
-    val pc = android.icu.util.PersianCalendar()
-    pc.timeInMillis = millis
-    val fmt = android.icu.text.SimpleDateFormat("EEEE d MMMM y، ساعت HH:mm", android.icu.util.ULocale("fa"))
-    fmt.calendar = pc
-    fmt.format(pc.time)
+    val (jy, jm, jd) = jalaliParts(millis)
+    val weekday = java.text.SimpleDateFormat("EEEE", Locale("fa")).format(java.util.Date(millis))
+    "$weekday ${faNum(jd)} ${jalaliMonths[jm - 1]} ${faNum(jy)}، ساعت ${formatHm(millis)}"
 } catch (e: Exception) {
     java.text.SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault()).format(java.util.Date(millis))
 }
