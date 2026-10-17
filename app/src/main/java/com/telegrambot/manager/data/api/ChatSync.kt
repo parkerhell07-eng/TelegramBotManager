@@ -24,16 +24,6 @@ object ChatSync {
         // Telegram 409 conflicts. Local data refreshes by itself.
         if (BotEngine.isPolling(botId)) return null
 
-        // Cloud-served bots: their updates stream to the Cloudflare worker
-        // (webhook is live), so getUpdates would 409 forever. New messages
-        // reach the owner through the Telegram support inbox instead.
-        val cloud = com.telegrambot.manager.data.store.CloudStore.peek()?.load(botId)
-        if (cloud != null && cloud.enabled) {
-            return com.telegrambot.manager.data.util.L10n.str(
-                "این ربات در حالت ابری است و پیام‌ها را روی سرور کلادفلر می‌گیرد؛ در این حالت دریافت محلی غیرفعال است. پیام‌های کاربران به چت خصوصی شما با ربات فوروارد می‌شود.",
-                "This bot runs in cloud mode and receives updates on Cloudflare; local polling is off. User messages are forwarded to your private chat with the bot."
-            )
-        }
         val data = store.load(botId)
         val offset = if (data.offset > 0) data.offset else null
         return when (val r = TelegramRepo.getUpdates(token, offset)) {

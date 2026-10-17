@@ -19,7 +19,7 @@ import com.telegrambot.manager.ui.screens.BotsListScreen
 import com.telegrambot.manager.ui.screens.BroadcastScreen
 import com.telegrambot.manager.ui.screens.ChatThreadScreen
 import com.telegrambot.manager.ui.screens.ChatsScreen
-import com.telegrambot.manager.ui.screens.CloudScreen
+import com.telegrambot.manager.ui.screens.AlwaysOnScreen
 import com.telegrambot.manager.ui.screens.CommandsScreen
 import com.telegrambot.manager.ui.screens.DashboardScreen
 import com.telegrambot.manager.ui.screens.MediaScreen
@@ -199,9 +199,13 @@ fun AppNavHost() {
             if (bot == null) LoadingBox() else AutoReplyScreen(bot = bot, onBack = { navController.popBackStack() })
         }
 
-        composable("bot/{botId}/cloud") { entry ->
+        composable("bot/{botId}/alwayson") { entry ->
             val bot = vm.botById(entry.arguments?.getString("botId") ?: "")
-            if (bot == null) LoadingBox() else CloudScreen(bot = bot, onBack = { navController.popBackStack() })
+            if (bot == null) LoadingBox() else AlwaysOnScreen(
+                bot = bot,
+                onBack = { navController.popBackStack() },
+                onOpenRules = { navController.navigate("bot/${bot.id}/autoreply") }
+            )
         }
 
         composable("bot/{botId}/profile") { entry ->

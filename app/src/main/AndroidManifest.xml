@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Least-privilege permissions:
-         INTERNET                     → Telegram Bot API / GitHub releases / Cloudflare API
+         INTERNET                     → Telegram Bot API / GitHub releases
          POST_NOTIFICATIONS           → Android 13+ runtime grant for the engine notification
          FOREGROUND_SERVICE(_DATA_SYNC) → 24/7 auto-answer engine
          REQUEST_INSTALL_PACKAGES     → in-app APK updates (GitHub distribution)
@@ -12,6 +12,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
@@ -37,12 +39,31 @@
             </intent-filter>
         </activity>
 
-        <!-- Keeps the auto-answer engine polling while the app is backgrounded. -->
+        <!-- Keeps the auto-answer engine polling while the app is backgrounded.
+             specialUse avoids the Android 15+ 6h/day dataSync cap; dataSync is
+             kept for API 29-33 where specialUse is not yet known. -->
         <service
             android:name=".BotEngineService"
             android:exported="false"
             android:stopWithTask="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="dataSync|specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="telegram_bot_24_7_auto_answer" />
+        </service>
+
+        <!-- Auto-starts the 24/7 engine after a reboot or an app update. -->
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Handles the Stop action on the engine notification. -->
+        <receiver android:name=".EngineActionReceiver" android:exported="false" />
 
         <!-- Lets the in-app updater open the downloaded APK with the installer. -->
         <provider

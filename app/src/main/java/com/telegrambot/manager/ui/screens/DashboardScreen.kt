@@ -18,7 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.BarChart
@@ -89,13 +89,8 @@ class DashboardViewModel(private val bot: Bot, appContext: Context) : ViewModel(
         private set
     var error by mutableStateOf<String?>(null)
         private set
-    var cloudEnabled by mutableStateOf(false)
-        private set
-
     init {
         refresh()
-        cloudEnabled = com.telegrambot.manager.data.store.CloudStore
-            .get(appContext.applicationContext).load(bot.id).enabled
     }
 
     fun refresh() {
@@ -215,20 +210,6 @@ fun DashboardScreen(
                                     )
                                 }
                             }
-                            if (vm.cloudEnabled) {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(50))
-                                        .background(Color(0xFF0E7490).copy(alpha = 0.9f))
-                                        .padding(horizontal = 10.dp, vertical = 3.dp)
-                                ) {
-                                    Text(
-                                        "ربات ابری ۲۴/۷ فعال",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = Color.White
-                                    )
-                                }
-                            }
                         }
                     }
                 }
@@ -270,7 +251,7 @@ fun DashboardScreen(
             )
 
             val tools = listOf(
-                Pair(Tools.cloud, AccentTeal),
+                Pair(Tools.alwayson, AccentTeal),
                 Pair(Tools.autoreply, AccentGreen),
                 Pair(Tools.assistant, AccentGold),
                 Pair(Tools.chats, TgBlue),
@@ -322,7 +303,7 @@ fun DashboardScreen(
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
-                    "۵. با ابزار «ربات ابری ۲۴/۷»، ربات روی Cloudflare مستقر می‌شود و حتی با گوشی خاموش به همه پیام‌ها جواب می‌دهد.",
+                    "۵. با ابزار «ربات همیشه فعال»، ربات روی خودِ گوشی ۲۴ ساعته به دستورها جواب می‌دهد؛ معافیت باتری و شروع خودکار را همان‌جا فعال کنید.",
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -359,7 +340,7 @@ private data class Tool(
 )
 
 private object Tools {
-    val cloud = Tool("cloud", "ربات ابری ۲۴/۷", "Cloud bot 24/7", Icons.Filled.CloudDone)
+    val alwayson = Tool("alwayson", "ربات همیشه فعال", "Always-on bot", Icons.Filled.Bolt)
     val autoreply = Tool("autoreply", "پاسخگویی خودکار", "Auto responder", Icons.Filled.SupportAgent)
     val assistant = Tool("assistant", "دستیار هوشمند", "Smart assistant", Icons.Filled.AutoAwesome)
     val chats = Tool("chats", "چت‌ها", "Chats", Icons.Filled.Forum)

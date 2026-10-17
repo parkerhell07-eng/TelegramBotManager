@@ -195,7 +195,7 @@ object TelegramRepo {
 
     /**
      * Full webhook setup. [secretToken] makes Telegram echo a shared secret
-     * in the X-Telegram-Bot-Api-Secret-Token header so only our cloud worker
+     * in the X-Telegram-Bot-Api-Secret-Token header so only the webhook receiver
      * can feed the bot; [allowedUpdates] narrows delivery (e.g. messages).
      */
     suspend fun setWebhook(

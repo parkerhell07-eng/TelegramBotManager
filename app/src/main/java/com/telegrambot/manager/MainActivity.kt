@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.telegrambot.manager.data.api.Scheduler
+import com.telegrambot.manager.data.store.AlwaysOnPrefs
 import com.telegrambot.manager.data.store.AutoReplyStore
 import com.telegrambot.manager.data.store.SettingsStore
 import com.telegrambot.manager.data.util.L10n
@@ -26,14 +27,14 @@ class MainActivity : ComponentActivity() {
 
         // Bring the 24/7 answer engine back up if any bot has auto-reply on
         // (the service is START_STICKY, but OEM task killers are aggressive).
-        // Cloud-served bots are excluded: they answer from Cloudflare and
-        // must not be long-polled from the phone.
-        val autoStore = AutoReplyStore.get(applicationContext)
-        val cloudStore = com.telegrambot.manager.data.store.CloudStore.get(applicationContext)
-        val phoneBotActive = autoStore.enabledBotIds().any { !cloudStore.load(it).enabled }
-        if (phoneBotActive) {
+        // A user pause from the service notification is respected here.
+        if (!AlwaysOnPrefs.isPaused(applicationContext) &&
+            AutoReplyStore.get(applicationContext).enabledBotIds().isNotEmpty()
+        ) {
             EngineControl.start(applicationContext)
         }
+        // 15-minute watchdog: revives the engine if an OEM killer got it.
+        KeepAliveWorker.schedule(applicationContext)
 
         setContent {
             TelegramBotManagerTheme {

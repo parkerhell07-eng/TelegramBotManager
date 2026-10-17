@@ -13,6 +13,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.telegrambot.manager.data.engine.BotEngine
+import com.telegrambot.manager.data.store.AutoReplyStore
 import com.telegrambot.manager.data.util.L10n
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -60,12 +61,16 @@ class BotEngineService : Service() {
 
     private fun startForegroundCompat() {
         val notif = buildNotification()
-        if (Build.VERSION.SDK_INT >= 29) {
-            ServiceCompat.startForeground(
-                this, NOTIF_ID, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-            )
-        } else {
-            startForeground(NOTIF_ID, notif)
+        when {
+            Build.VERSION.SDK_INT >= 34 ->
+                ServiceCompat.startForeground(
+                    this, NOTIF_ID, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                )
+            Build.VERSION.SDK_INT >= 29 ->
+                ServiceCompat.startForeground(
+                    this, NOTIF_ID, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                )
+            else -> startForeground(NOTIF_ID, notif)
         }
     }
 
@@ -75,18 +80,34 @@ class BotEngineService : Service() {
             Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val stopIntent = PendingIntent.getBroadcast(
+            this, 1,
+            Intent(this, EngineActionReceiver::class.java).setAction(EngineActionReceiver.ACTION_STOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val count = try {
+            AutoReplyStore.get(this).enabledBotIds().size
+        } catch (e: Exception) {
+            0
+        }
+        val body = if (count > 1)
+            L10n.str(
+                "$count ربات ۲۴ ساعته به دستورها جواب می‌دهند.",
+                "$count bots answer commands around the clock."
+            )
+        else
+            L10n.str(
+                "ربات‌های شما ۲۴ ساعته به دستورات پاسخ می‌دهند.",
+                "Your bots answer commands around the clock."
+            )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle(L10n.str("موتور ربات فعال است", "Bot engine is running"))
-            .setContentText(
-                L10n.str(
-                    "ربات‌های شما ۲۴ ساعته به دستورات پاسخ می‌دهند.",
-                    "Your bots answer commands around the clock."
-                )
-            )
+            .setContentTitle(L10n.str("ربات همیشه فعال است", "Always-on bot is running"))
+            .setContentText(body)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentIntent(tapIntent)
+            .addAction(0, L10n.str("توقف", "Stop"), stopIntent)
             .build()
     }
 
@@ -130,7 +151,12 @@ object EngineControl {
     fun start(ctx: Context) {
         if (running.value) return
         val intent = Intent(ctx.applicationContext, BotEngineService::class.java)
-        androidx.core.content.ContextCompat.startForegroundService(ctx.applicationContext, intent)
+        try {
+            androidx.core.content.ContextCompat.startForegroundService(ctx.applicationContext, intent)
+        } catch (e: Exception) {
+            // Background FGS starts can be rejected on some OEM/Android
+            // combos; the 15-minute watchdog or next app open retries.
+        }
     }
 
     fun stop(ctx: Context) {
