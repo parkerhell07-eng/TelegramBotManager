@@ -79,6 +79,32 @@ data class TgShortDescriptionResult(
     @SerializedName("short_description") val shortDescription: String? = null
 )
 
+/** Telegram chat member (admin / restricted / member status). */
+data class TgChatMember(
+    val user: TgUser? = null,
+    val status: String? = null, // creator | administrator | member | restricted | left | kicked
+    @SerializedName("custom_title") val customTitle: String? = null,
+    @SerializedName("is_anonymous") val isAnonymous: Boolean? = null,
+    @SerializedName("can_be_edited") val canBeEdited: Boolean? = null,
+    @SerializedName("can_delete_messages") val canDeleteMessages: Boolean? = null,
+    @SerializedName("can_restrict_members") val canRestrictMembers: Boolean? = null
+)
+
+data class TgPollOption(
+    val text: String = "",
+    @SerializedName("voter_count") val voterCount: Int = 0
+)
+
+data class TgPoll(
+    val id: String = "",
+    val question: String = "",
+    val options: List<TgPollOption> = emptyList(),
+    @SerializedName("total_voter_count") val totalVoterCount: Int = 0,
+    @SerializedName("is_closed") val isClosed: Boolean = false,
+    val type: String? = null, // regular | quiz
+    @SerializedName("allows_multiple_answers") val allowsMultipleAnswers: Boolean? = null
+)
+
 /** Local entity: a bot saved inside the app. */
 data class Bot(
     val id: String = "",

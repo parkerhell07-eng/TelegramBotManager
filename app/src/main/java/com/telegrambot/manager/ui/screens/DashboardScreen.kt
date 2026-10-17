@@ -20,10 +20,12 @@ import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Poll
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.AlertDialog
@@ -220,6 +222,8 @@ fun DashboardScreen(
             val tools = listOf(
                 Pair(Tools.chats, TgBlue),
                 Pair(Tools.broadcast, AccentOrange),
+                Pair(Tools.members, AccentTeal),
+                Pair(Tools.poll, AccentPink),
                 Pair(Tools.message, TgBlue),
                 Pair(Tools.media, PremiumPurple),
                 Pair(Tools.commands, AccentTeal),
@@ -289,6 +293,8 @@ private data class Tool(val route: String, val label: String, val icon: androidx
 private object Tools {
     val chats = Tool("chats", "چت‌ها", Icons.Filled.Forum)
     val broadcast = Tool("broadcast", "پیام همگانی", Icons.Filled.Campaign)
+    val members = Tool("members", "مدیریت اعضا", Icons.Filled.Groups)
+    val poll = Tool("poll", "نظرسنجی", Icons.Filled.Poll)
     val message = Tool("message", "ارسال پیام", Icons.Filled.Send)
     val media = Tool("media", "ارسال مدیا", Icons.Filled.PhotoLibrary)
     val commands = Tool("commands", "دستورات ربات", Icons.Filled.ListAlt)

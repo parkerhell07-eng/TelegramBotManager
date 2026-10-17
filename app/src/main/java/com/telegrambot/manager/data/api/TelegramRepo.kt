@@ -2,9 +2,11 @@ package com.telegrambot.manager.data.api
 
 import com.google.gson.JsonParseException
 import com.telegrambot.manager.data.model.TgBotCommand
+import com.telegrambot.manager.data.model.TgChatMember
 import com.telegrambot.manager.data.model.TgDescriptionResult
 import com.telegrambot.manager.data.model.TgMessage
 import com.telegrambot.manager.data.model.TgNameResult
+import com.telegrambot.manager.data.model.TgPoll
 import com.telegrambot.manager.data.model.TgResponse
 import com.telegrambot.manager.data.model.TgShortDescriptionResult
 import com.telegrambot.manager.data.model.TgUpdate
@@ -216,4 +218,78 @@ object TelegramRepo {
 
     suspend fun getMyShortDescription(token: String): ApiResult<TgShortDescriptionResult> =
         safeCall { api.getMyShortDescription(apiUrl(token, "getMyShortDescription")) }
+
+    // ── Member management ─────────────────────────────────────────────
+
+    suspend fun banChatMember(
+        token: String, chatId: String, userId: Long, revokeMessages: Boolean?
+    ): ApiResult<Boolean> = safeCall {
+        api.banChatMember(apiUrl(token, "banChatMember"), chatId, userId, revokeMessages)
+    }
+
+    suspend fun unbanChatMember(
+        token: String, chatId: String, userId: Long, onlyIfBanned: Boolean?
+    ): ApiResult<Boolean> = safeCall {
+        api.unbanChatMember(apiUrl(token, "unbanChatMember"), chatId, userId, onlyIfBanned)
+    }
+
+    suspend fun promoteChatMember(
+        token: String,
+        chatId: String,
+        userId: Long,
+        canChangeInfo: Boolean?,
+        canDeleteMessages: Boolean?,
+        canInviteUsers: Boolean?,
+        canRestrictMembers: Boolean?,
+        canPinMessages: Boolean?,
+        canPromoteMembers: Boolean?
+    ): ApiResult<Boolean> = safeCall {
+        api.promoteChatMember(
+            apiUrl(token, "promoteChatMember"), chatId, userId,
+            canChangeInfo, canDeleteMessages, canInviteUsers,
+            canRestrictMembers, canPinMessages, canPromoteMembers
+        )
+    }
+
+    suspend fun getChatAdministrators(token: String, chatId: String): ApiResult<List<TgChatMember>> =
+        safeCall { api.getChatAdministrators(apiUrl(token, "getChatAdministrators"), chatId) }
+
+    suspend fun getChatMember(token: String, chatId: String, userId: Long): ApiResult<TgChatMember> =
+        safeCall { api.getChatMember(apiUrl(token, "getChatMember"), chatId, userId) }
+
+    suspend fun getChatMemberCount(token: String, chatId: String): ApiResult<Int> =
+        safeCall { api.getChatMemberCount(apiUrl(token, "getChatMemberCount"), chatId) }
+
+    suspend fun pinChatMessage(
+        token: String, chatId: String, messageId: Long, disableNotification: Boolean?
+    ): ApiResult<Boolean> = safeCall {
+        api.pinChatMessage(apiUrl(token, "pinChatMessage"), chatId, messageId, disableNotification)
+    }
+
+    suspend fun unpinChatMessage(
+        token: String, chatId: String, messageId: Long?
+    ): ApiResult<Boolean> = safeCall {
+        api.unpinChatMessage(apiUrl(token, "unpinChatMessage"), chatId, messageId)
+    }
+
+    // ── Polls ─────────────────────────────────────────────────────────
+
+    suspend fun sendPoll(
+        token: String,
+        chatId: String,
+        question: String,
+        optionsJson: String,
+        isAnonymous: Boolean?,
+        type: String?,
+        allowsMultipleAnswers: Boolean?,
+        correctOptionId: Int?
+    ): ApiResult<TgMessage> = safeCall {
+        api.sendPoll(
+            apiUrl(token, "sendPoll"), chatId, question, optionsJson,
+            isAnonymous, type, allowsMultipleAnswers, correctOptionId
+        )
+    }
+
+    suspend fun stopPoll(token: String, chatId: String, messageId: Long): ApiResult<TgPoll> =
+        safeCall { api.stopPoll(apiUrl(token, "stopPoll"), chatId, messageId) }
 }

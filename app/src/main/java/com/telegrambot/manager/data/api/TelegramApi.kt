@@ -1,9 +1,11 @@
 package com.telegrambot.manager.data.api
 
 import com.telegrambot.manager.data.model.TgBotCommand
+import com.telegrambot.manager.data.model.TgChatMember
 import com.telegrambot.manager.data.model.TgDescriptionResult
 import com.telegrambot.manager.data.model.TgMessage
 import com.telegrambot.manager.data.model.TgNameResult
+import com.telegrambot.manager.data.model.TgPoll
 import com.telegrambot.manager.data.model.TgResponse
 import com.telegrambot.manager.data.model.TgShortDescriptionResult
 import com.telegrambot.manager.data.model.TgUpdate
@@ -158,4 +160,100 @@ interface TelegramApi {
 
     @POST
     suspend fun getMyShortDescription(@Url url: String): TgResponse<TgShortDescriptionResult>
+
+    // ── Member management ─────────────────────────────────────────────
+
+    @FormUrlEncoded
+    @POST
+    suspend fun banChatMember(
+        @Url url: String,
+        @Field("chat_id") chatId: String,
+        @Field("user_id") userId: Long,
+        @Field("revoke_messages") revokeMessages: Boolean?
+    ): TgResponse<Boolean>
+
+    @FormUrlEncoded
+    @POST
+    suspend fun unbanChatMember(
+        @Url url: String,
+        @Field("chat_id") chatId: String,
+        @Field("user_id") userId: Long,
+        @Field("only_if_banned") onlyIfBanned: Boolean?
+    ): TgResponse<Boolean>
+
+    @FormUrlEncoded
+    @POST
+    suspend fun promoteChatMember(
+        @Url url: String,
+        @Field("chat_id") chatId: String,
+        @Field("user_id") userId: Long,
+        @Field("can_change_info") canChangeInfo: Boolean?,
+        @Field("can_delete_messages") canDeleteMessages: Boolean?,
+        @Field("can_invite_users") canInviteUsers: Boolean?,
+        @Field("can_restrict_members") canRestrictMembers: Boolean?,
+        @Field("can_pin_messages") canPinMessages: Boolean?,
+        @Field("can_promote_members") canPromoteMembers: Boolean?
+    ): TgResponse<Boolean>
+
+    @FormUrlEncoded
+    @POST
+    suspend fun getChatAdministrators(
+        @Url url: String,
+        @Field("chat_id") chatId: String
+    ): TgResponse<List<TgChatMember>>
+
+    @FormUrlEncoded
+    @POST
+    suspend fun getChatMember(
+        @Url url: String,
+        @Field("chat_id") chatId: String,
+        @Field("user_id") userId: Long
+    ): TgResponse<TgChatMember>
+
+    @FormUrlEncoded
+    @POST
+    suspend fun getChatMemberCount(
+        @Url url: String,
+        @Field("chat_id") chatId: String
+    ): TgResponse<Int>
+
+    @FormUrlEncoded
+    @POST
+    suspend fun pinChatMessage(
+        @Url url: String,
+        @Field("chat_id") chatId: String,
+        @Field("message_id") messageId: Long,
+        @Field("disable_notification") disableNotification: Boolean?
+    ): TgResponse<Boolean>
+
+    @FormUrlEncoded
+    @POST
+    suspend fun unpinChatMessage(
+        @Url url: String,
+        @Field("chat_id") chatId: String,
+        @Field("message_id") messageId: Long?
+    ): TgResponse<Boolean>
+
+    // ── Polls ─────────────────────────────────────────────────────────
+
+    @FormUrlEncoded
+    @POST
+    suspend fun sendPoll(
+        @Url url: String,
+        @Field("chat_id") chatId: String,
+        @Field("question") question: String,
+        @Field("options") optionsJson: String,
+        @Field("is_anonymous") isAnonymous: Boolean?,
+        @Field("type") type: String?,
+        @Field("allows_multiple_answers") allowsMultipleAnswers: Boolean?,
+        @Field("correct_option_id") correctOptionId: Int?
+    ): TgResponse<TgMessage>
+
+    @FormUrlEncoded
+    @POST
+    suspend fun stopPoll(
+        @Url url: String,
+        @Field("chat_id") chatId: String,
+        @Field("message_id") messageId: Long
+    ): TgResponse<TgPoll>
 }
