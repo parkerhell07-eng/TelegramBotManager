@@ -1,5 +1,6 @@
 package com.telegrambot.manager.ui.screens
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.BarChart
@@ -80,16 +82,20 @@ import com.telegrambot.manager.vm.BotVmFactory
 import com.telegrambot.manager.vm.BotsViewModel
 import kotlinx.coroutines.launch
 
-class DashboardViewModel(private val bot: Bot) : ViewModel() {
+class DashboardViewModel(private val bot: Bot, appContext: Context) : ViewModel() {
     var info by mutableStateOf<TgUser?>(null)
         private set
     var loading by mutableStateOf(false)
         private set
     var error by mutableStateOf<String?>(null)
         private set
+    var cloudEnabled by mutableStateOf(false)
+        private set
 
     init {
         refresh()
+        cloudEnabled = com.telegrambot.manager.data.store.CloudStore
+            .get(appContext.applicationContext).load(bot.id).enabled
     }
 
     fun refresh() {
@@ -112,7 +118,12 @@ fun DashboardScreen(
     onBack: () -> Unit,
     onOpen: (String) -> Unit
 ) {
-    val vm: DashboardViewModel = viewModel(factory = BotVmFactory { DashboardViewModel(bot) })
+    val appCtx = LocalContext.current.applicationContext
+    val vm: DashboardViewModel = viewModel(
+        factory = BotVmFactory {
+            DashboardViewModel(bot, appCtx)
+        }
+    )
     val info = vm.info
     val loading = vm.loading
     val error = vm.error
@@ -204,6 +215,20 @@ fun DashboardScreen(
                                     )
                                 }
                             }
+                            if (vm.cloudEnabled) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(50))
+                                        .background(Color(0xFF0E7490).copy(alpha = 0.9f))
+                                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                                ) {
+                                    Text(
+                                        "ربات ابری ۲۴/۷ فعال",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color.White
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -245,6 +270,7 @@ fun DashboardScreen(
             )
 
             val tools = listOf(
+                Pair(Tools.cloud, AccentTeal),
                 Pair(Tools.autoreply, AccentGreen),
                 Pair(Tools.assistant, AccentGold),
                 Pair(Tools.chats, TgBlue),
@@ -295,6 +321,10 @@ fun DashboardScreen(
                     "۴. برای ساخت منوی /commands از ابزار «دستورات ربات» استفاده کنید.",
                     style = MaterialTheme.typography.bodySmall
                 )
+                Text(
+                    "۵. با ابزار «ربات ابری ۲۴/۷»، ربات روی Cloudflare مستقر می‌شود و حتی با گوشی خاموش به همه پیام‌ها جواب می‌دهد.",
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
 
@@ -329,6 +359,7 @@ private data class Tool(
 )
 
 private object Tools {
+    val cloud = Tool("cloud", "ربات ابری ۲۴/۷", "Cloud bot 24/7", Icons.Filled.CloudDone)
     val autoreply = Tool("autoreply", "پاسخگویی خودکار", "Auto responder", Icons.Filled.SupportAgent)
     val assistant = Tool("assistant", "دستیار هوشمند", "Smart assistant", Icons.Filled.AutoAwesome)
     val chats = Tool("chats", "چت‌ها", "Chats", Icons.Filled.Forum)

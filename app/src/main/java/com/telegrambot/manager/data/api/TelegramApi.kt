@@ -106,7 +106,9 @@ interface TelegramApi {
     suspend fun setWebhook(
         @Url url: String,
         @Field("url") urlField: String,
-        @Field("drop_pending_updates") dropPendingUpdates: Boolean?
+        @Field("drop_pending_updates") dropPendingUpdates: Boolean?,
+        @Field("secret_token") secretToken: String?,
+        @Field("allowed_updates") allowedUpdates: String?
     ): TgResponse<Boolean>
 
     @FormUrlEncoded

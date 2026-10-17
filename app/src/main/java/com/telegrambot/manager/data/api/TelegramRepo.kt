@@ -191,7 +191,23 @@ object TelegramRepo {
         safeCall { api.getUpdates(apiUrl(token, "getUpdates"), offset, 100, timeout) }
 
     suspend fun setWebhook(token: String, url: String, dropPending: Boolean?): ApiResult<Boolean> =
-        safeCall { api.setWebhook(apiUrl(token, "setWebhook"), url, dropPending) }
+        setWebhook(token, url, dropPending, null, null)
+
+    /**
+     * Full webhook setup. [secretToken] makes Telegram echo a shared secret
+     * in the X-Telegram-Bot-Api-Secret-Token header so only our cloud worker
+     * can feed the bot; [allowedUpdates] narrows delivery (e.g. messages).
+     */
+    suspend fun setWebhook(
+        token: String,
+        url: String,
+        dropPending: Boolean?,
+        secretToken: String?,
+        allowedUpdates: String?
+    ): ApiResult<Boolean> =
+        safeCall {
+            api.setWebhook(apiUrl(token, "setWebhook"), url, dropPending, secretToken, allowedUpdates)
+        }
 
     suspend fun deleteWebhook(token: String, dropPending: Boolean?): ApiResult<Boolean> =
         safeCall { api.deleteWebhook(apiUrl(token, "deleteWebhook"), dropPending) }

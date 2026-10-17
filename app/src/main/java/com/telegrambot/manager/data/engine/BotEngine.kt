@@ -58,9 +58,13 @@ object BotEngine {
             while (isActive) {
                 val bots = BotStore.get(app).loadBots()
                 val store = AutoReplyStore.get(app)
+                val cloudStore = com.telegrambot.manager.data.store.CloudStore.get(app)
                 val active = bots.mapNotNull { b ->
                     val cfg = store.load(b.id)
-                    if (cfg.enabled) b to cfg else null
+                    // Bots served by their Cloudflare worker answer from the
+                    // cloud; phone long-polling for them would only collide
+                    // with the webhook (409) and must stay off.
+                    if (cfg.enabled && !cloudStore.load(b.id).enabled) b to cfg else null
                 }
                 _polling.value = active.map { it.first.id }.toSet()
                 if (active.isEmpty()) {

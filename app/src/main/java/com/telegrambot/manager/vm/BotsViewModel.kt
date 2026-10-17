@@ -86,6 +86,7 @@ class BotsViewModel(
     }
 
     fun deleteBot(id: String) {
+        val bot = _bots.value.firstOrNull { it.id == id }
         // Cancel pending scheduled sends and clear this bot's local data.
         val scheduleStore = ScheduleStore.get(appContext)
         scheduleStore.all()
@@ -96,6 +97,12 @@ class BotsViewModel(
         scheduleStore.removeBot(id)
         ChatStore.get(appContext).clear(id)
         AutoReplyStore.get(appContext).removeBot(id)
+        com.telegrambot.manager.data.store.CloudStore.get(appContext).removeBot(id)
+        // Best-effort: release the webhook so Telegram stops POSTing to a
+        // worker whose config no longer exists on the phone.
+        if (bot != null) {
+            viewModelScope.launch { TelegramRepo.deleteWebhook(bot.token, null) }
+        }
         _bots.value = _bots.value.filterNot { it.id == id }
         store.saveBots(_bots.value)
         // Drop the deleted bot's listener immediately (engine re-reads bots).

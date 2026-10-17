@@ -26,7 +26,12 @@ class MainActivity : ComponentActivity() {
 
         // Bring the 24/7 answer engine back up if any bot has auto-reply on
         // (the service is START_STICKY, but OEM task killers are aggressive).
-        if (AutoReplyStore.get(applicationContext).enabledBotIds().isNotEmpty()) {
+        // Cloud-served bots are excluded: they answer from Cloudflare and
+        // must not be long-polled from the phone.
+        val autoStore = AutoReplyStore.get(applicationContext)
+        val cloudStore = com.telegrambot.manager.data.store.CloudStore.get(applicationContext)
+        val phoneBotActive = autoStore.enabledBotIds().any { !cloudStore.load(it).enabled }
+        if (phoneBotActive) {
             EngineControl.start(applicationContext)
         }
 

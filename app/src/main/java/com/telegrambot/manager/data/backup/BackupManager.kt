@@ -61,6 +61,10 @@ object BackupManager {
         payload.add("autoReply", gson.toJsonTree(AutoReplyStore.get(ctx).allMap()))
         payload.add("schedules", gson.toJsonTree(ScheduleStore.get(ctx).all()))
         payload.add("templates", gson.toJsonTree(TemplateStore.get(ctx).load()))
+        payload.add("cloud", gson.toJsonTree(com.telegrambot.manager.data.store.CloudStore.get(ctx).allMap()))
+        val cfCreds = com.telegrambot.manager.data.store.CloudStore.get(ctx).creds()
+        payload.addProperty("cloudToken", cfCreds.apiToken)
+        payload.addProperty("cloudAccount", cfCreds.accountId)
 
         val chats = JsonObject()
         val chatStore = ChatStore.get(ctx)
@@ -124,6 +128,20 @@ object BackupManager {
                 object : TypeToken<List<MsgTemplate>>() {}.type
             ) ?: emptyList()
             TemplateStore.get(ctx).replaceAll(templates)
+
+            // Cloud (Cloudflare Workers) config + credentials.
+            val cloud = gson.fromJson<Map<String, com.telegrambot.manager.data.model.BotCloud>>(
+                root.optJSONObject("cloud")?.toString() ?: "{}",
+                object : TypeToken<Map<String, com.telegrambot.manager.data.model.BotCloud>>() {}.type
+            ) ?: emptyMap()
+            com.telegrambot.manager.data.store.CloudStore.get(ctx).replaceAll(cloud)
+            val cfToken = root.optString("cloudToken", "")
+            val cfAccount = root.optString("cloudAccount", "")
+            if (cfToken.isNotEmpty() || cfAccount.isNotEmpty()) {
+                com.telegrambot.manager.data.store.CloudStore.get(ctx).saveCreds(
+                    com.telegrambot.manager.data.model.CloudCredentials(apiToken = cfToken, accountId = cfAccount)
+                )
+            }
 
             // Chat history per bot.
             val chatStore = ChatStore.get(ctx)

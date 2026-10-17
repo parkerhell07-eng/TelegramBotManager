@@ -1,6 +1,9 @@
 package com.telegrambot.manager.ui.screens
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.PowerManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -47,6 +50,7 @@ import com.telegrambot.manager.data.engine.BotEngine
 import com.telegrambot.manager.data.model.Bot
 import com.telegrambot.manager.data.model.BotAutoReply
 import com.telegrambot.manager.data.store.AutoReplyStore
+import com.telegrambot.manager.data.store.CloudStore
 import com.telegrambot.manager.data.util.L10n
 import com.telegrambot.manager.data.util.st
 import com.telegrambot.manager.ui.components.AppScaffold
@@ -73,6 +77,8 @@ class AutoReplyViewModel(private val bot: Bot, appContext: Context) : ViewModel(
         private set
     var noticeIsError by mutableStateOf(false)
         private set
+    var cloudOn by mutableStateOf(false)
+        private set
 
     // Health-check outputs.
     var checking by mutableStateOf(false)
@@ -84,6 +90,7 @@ class AutoReplyViewModel(private val bot: Bot, appContext: Context) : ViewModel(
 
     init {
         cfg = AutoReplyStore.get(appCtx).load(bot.id)
+        cloudOn = CloudStore.get(appCtx).load(bot.id).enabled
         loaded = true
     }
 
@@ -203,6 +210,14 @@ class AutoReplyViewModel(private val bot: Bot, appContext: Context) : ViewModel(
                     val url = w.data.url
                     if (url.isNullOrEmpty()) {
                         lines += HealthLine(L10n.str("وب‌هوک: خالی (برای دریافت پیام درست است)", "Webhook: empty (correct for polling)"), true)
+                    } else if (cloudOn) {
+                        lines += HealthLine(
+                            L10n.str(
+                                "وب‌هوک ابری فعال است (سرور کلادفلر) — طبیعی است و حذف نشد",
+                                "Cloud webhook is active (Cloudflare worker) — normal, left untouched"
+                            ),
+                            true
+                        )
                     } else {
                         TelegramRepo.deleteWebhook(bot.token, null)
                         lines += HealthLine(
@@ -281,17 +296,49 @@ fun AutoReplyScreen(bot: Bot, onBack: () -> Unit) {
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            if (engineRunning)
+                            if (vm.cloudOn)
+                                st("این ربات از ابر (کلادفلر) پاسخ می‌دهد", "This bot answers from the cloud (Cloudflare)")
+                            else if (engineRunning)
                                 st("سرویس پاسخ‌گویی فعال است", "Answer service is running")
                             else
                                 st("سرویس پاسخ‌گویی متوقف است", "Answer service is stopped"),
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (engineRunning) MaterialTheme.colorScheme.tertiary
+                            color = if (engineRunning || vm.cloudOn) MaterialTheme.colorScheme.tertiary
                             else MaterialTheme.colorScheme.error
                         )
                     }
                     Switch(checked = vm.cfg.enabled, onCheckedChange = { vm.setEnabled(it) })
                 }
+                val pm = appCtx.getSystemService(Context.POWER_SERVICE) as PowerManager
+                if (vm.cfg.enabled && !vm.cloudOn && !pm.isIgnoringBatteryOptimizations(appCtx.packageName)) {
+                    TextButton(onClick = {
+                        val i = Intent(
+                            android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                            Uri.parse("package:" + appCtx.packageName)
+                        )
+                        try {
+                            appCtx.startActivity(i)
+                        } catch (e: Exception) {
+                        }
+                    }) {
+                        Text(
+                            st(
+                                "معافیت از بهینه‌سازی باتری (پایداری بیشتر شبانه)",
+                                "Ignore battery optimizations (better overnight reliability)"
+                            )
+                        )
+                    }
+                }
+            }
+
+            if (vm.cloudOn) {
+                StatusMessage(
+                    st(
+                        "این ربات در حالت ابری است و پاسخ‌ها از سرور Cloudflare ارسال می‌شود؛ موتور گوشی برای آن غیرفعال است. پس از تغییر قوانین، از صفحه «ربات ابری ۲۴/۷» همگام‌سازی کنید.",
+                        "This bot runs in cloud mode; replies come from the Cloudflare worker and the phone engine is off for it. After editing rules, sync from the \"Cloud bot 24/7\" screen."
+                    ),
+                    isError = false
+                )
             }
 
             if (vm.notice != null) StatusMessage(vm.notice ?: "", vm.noticeIsError)
