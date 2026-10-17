@@ -80,12 +80,12 @@ class SettingsViewModel(private val appContext: android.content.Context) : ViewM
     var updateNote by mutableStateOf<String?>(null)
         private set
 
-    fun setTheme(mode: ThemeMode) {
+    fun applyTheme(mode: ThemeMode) {
         theme = mode
         settings.setTheme(mode)
     }
 
-    fun setLang(l: L10n.Lang) {
+    fun applyLang(l: L10n.Lang) {
         lang = l
         settings.setLang(l) // also pushes into L10n for engine/notifications
     }
@@ -252,7 +252,7 @@ fun SettingsScreen(
                     ThemeMode.entries.forEach { mode ->
                         FilterChip(
                             selected = vm.theme == mode,
-                            onClick = { vm.setTheme(mode) },
+                            onClick = { vm.applyTheme(mode) },
                             label = { Text(themeLabels[mode] ?: "") }
                         )
                     }
@@ -272,12 +272,12 @@ fun SettingsScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     FilterChip(
                         selected = vm.lang == L10n.Lang.FA,
-                        onClick = { vm.setLang(L10n.Lang.FA) },
+                        onClick = { vm.applyLang(L10n.Lang.FA) },
                         label = { Text("فارسی") }
                     )
                     FilterChip(
                         selected = vm.lang == L10n.Lang.EN,
-                        onClick = { vm.setLang(L10n.Lang.EN) },
+                        onClick = { vm.applyLang(L10n.Lang.EN) },
                         label = { Text("English") }
                     )
                 }
