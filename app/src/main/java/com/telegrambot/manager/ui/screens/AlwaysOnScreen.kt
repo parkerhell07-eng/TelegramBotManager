@@ -70,7 +70,7 @@ class AlwaysOnViewModel(private val bot: Bot, appContext: Context) : ViewModel()
         enabled = AutoReplyStore.get(appCtx).load(bot.id).enabled
     }
 
-    fun setEnabled(on: Boolean) {
+    fun setAlwaysOn(on: Boolean) {
         val cfg = AutoReplyStore.get(appCtx).load(bot.id)
         AutoReplyStore.get(appCtx).save(cfg.copy(enabled = on))
         enabled = on
@@ -131,7 +131,7 @@ fun AlwaysOnScreen(bot: Bot, onBack: () -> Unit, onOpenRules: () -> Unit) {
                             else MaterialTheme.colorScheme.error
                         )
                     }
-                    Switch(checked = vm.enabled, onCheckedChange = { vm.setEnabled(it) })
+                    Switch(checked = vm.enabled, onCheckedChange = { vm.setAlwaysOn(it) })
                 }
                 vm.notice?.let { StatusMessage(it, false) }
                 TextButton(onClick = onOpenRules) {
