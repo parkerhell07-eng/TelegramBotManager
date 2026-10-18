@@ -65,7 +65,8 @@ object CloudDeployer {
         val created = gh.createRepo(repoName)
         if (created is GitHubApi.Res.Err) throw CloudException(0, created.message)
         val owner = (created as GitHubApi.Res.Ok).body
-            ?.get("owner")?.get("login")?.asString
+            ?.get("owner")?.takeIf { it.isJsonObject }?.asJsonObject
+            ?.get("login")?.asString
             ?: gh.me().second
 
         // Step 1 — engine.py

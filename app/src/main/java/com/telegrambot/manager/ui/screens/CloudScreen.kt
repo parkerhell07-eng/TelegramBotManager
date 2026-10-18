@@ -1,5 +1,6 @@
 package com.telegrambot.manager.ui.screens
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
@@ -447,7 +448,7 @@ fun CloudScreen(bot: Bot, onBack: () -> Unit) {
                                 Column(Modifier.weight(1f)) {
                                     Text(c.name, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                                     Text(
-                                        (if (c.username.isNotBlank()) "@" + c.username + " · " else "") + c.id,
+                                        (if (c.username?.isNotBlank() == true) "@" + c.username + " · " else "") + c.id,
                                         fontSize = 11.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
