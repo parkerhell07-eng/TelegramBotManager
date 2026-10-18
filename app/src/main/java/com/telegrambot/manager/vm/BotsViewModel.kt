@@ -98,10 +98,14 @@ class BotsViewModel(
         ChatStore.get(appContext).clear(id)
         AutoReplyStore.get(appContext).removeBot(id)
         // Best-effort: release the webhook so Telegram stops POSTing to an
-        // endpoint whose config no longer exists on the phone.
+        // endpoint whose config no longer exists on the phone, and tear down
+        // the 24/7 GitHub cloud repo if this bot had one.
         if (bot != null) {
             viewModelScope.launch {
                 TelegramRepo.deleteWebhook(bot.token, null)
+                com.telegrambot.manager.data.cloud.CloudDeployer.cleanupForDeletedBot(
+                    appContext, bot.id
+                )
             }
         }
         _bots.value = _bots.value.filterNot { it.id == id }

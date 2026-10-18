@@ -25,6 +25,9 @@ class MainActivity : ComponentActivity() {
         // Sync the notification/engine language with the saved preference.
         L10n.set(SettingsStore.get(applicationContext).lang.value)
 
+        // Warm up the cloud registry (context-free 409 guards in UI/API layers).
+        com.telegrambot.manager.data.store.CloudStore.get(applicationContext)
+
         // Bring the 24/7 answer engine back up if any bot has auto-reply on
         // (the service is START_STICKY, but OEM task killers are aggressive).
         // A user pause from the service notification is respected here.

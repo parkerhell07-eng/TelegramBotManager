@@ -58,9 +58,14 @@ object BotEngine {
             while (isActive) {
                 val bots = BotStore.get(app).loadBots()
                 val store = AutoReplyStore.get(app)
+                val cloudStore = com.telegrambot.manager.data.store.CloudStore.get(app)
                 val active = bots.mapNotNull { b ->
                     val cfg = store.load(b.id)
-                    if (cfg.enabled) b to cfg else null
+                    if (!cfg.enabled) return@mapNotNull null
+                    // Cloud-enabled bots are answered by GitHub Actions — the
+                    // phone must NOT also poll them (Telegram would 409).
+                    if (cloudStore.peek(b.id)?.enabled == true) return@mapNotNull null
+                    b to cfg
                 }
                 _polling.value = active.map { it.first.id }.toSet()
                 if (active.isEmpty()) {

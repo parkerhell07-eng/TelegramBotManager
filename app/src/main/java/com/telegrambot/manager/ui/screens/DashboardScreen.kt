@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.BarChart
@@ -251,6 +252,7 @@ fun DashboardScreen(
             )
 
             val tools = listOf(
+                Pair(Tools.cloud, AccentTeal),
                 Pair(Tools.alwayson, AccentTeal),
                 Pair(Tools.autoreply, AccentGreen),
                 Pair(Tools.assistant, AccentGold),
@@ -303,7 +305,11 @@ fun DashboardScreen(
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
-                    "۵. با ابزار «ربات همیشه فعال»، ربات روی خودِ گوشی ۲۴ ساعته به دستورها جواب می‌دهد؛ معافیت باتری و شروع خودکار را همان‌جا فعال کنید.",
+                    "۵. با ابزار «ربات ابری ۲۴/۷»، ربات روی سرور رایگان گیت‌هاب ۲۴ ساعته به دستورها جواب می‌دهد؛ حتی وقتی گوشی خاموش است.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    "۶. اگر حالت ابری را نمی‌خواهید، ابزار «ربات همیشه فعال» همان کار را روی خود گوشی انجام می‌دهد.",
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -340,6 +346,7 @@ private data class Tool(
 )
 
 private object Tools {
+    val cloud = Tool("cloud", "ربات ابری ۲۴/۷", "24/7 cloud bot", Icons.Filled.CloudDone)
     val alwayson = Tool("alwayson", "ربات همیشه فعال", "Always-on bot", Icons.Filled.Bolt)
     val autoreply = Tool("autoreply", "پاسخگویی خودکار", "Auto responder", Icons.Filled.SupportAgent)
     val assistant = Tool("assistant", "دستیار هوشمند", "Smart assistant", Icons.Filled.AutoAwesome)

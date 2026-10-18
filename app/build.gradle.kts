@@ -13,8 +13,8 @@ android {
         applicationId = "com.telegrambot.manager"
         minSdk = 24
         targetSdk = 34
-        versionCode = 12
-        versionName = "2.3.0"
+        versionCode = 13
+        versionName = "2.4.0"
     }
 
     // Stable release signing so every update installs over the previous
@@ -119,4 +119,7 @@ dependencies {
 
     // Encrypted storage for bot tokens
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
+    // libsodium sealed-box (GitHub Actions secrets) for the 24/7 cloud engine
+    implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
 }

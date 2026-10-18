@@ -24,6 +24,11 @@ object ChatSync {
         // Telegram 409 conflicts. Local data refreshes by itself.
         if (BotEngine.isPolling(botId)) return null
 
+        // Cloud-enabled bots are polled by GitHub Actions around the clock; a
+        // phone-side getUpdates would 409-fight the cloud worker. In cloud
+        // mode the owner inbox (admin chat) is the conversation surface.
+        if (botId in com.telegrambot.manager.data.store.CloudStore.enabledIds.value) return null
+
         val data = store.load(botId)
         val offset = if (data.offset > 0) data.offset else null
         return when (val r = TelegramRepo.getUpdates(token, offset)) {

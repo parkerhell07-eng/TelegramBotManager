@@ -220,7 +220,16 @@ class AutoReplyViewModel(private val bot: Bot, appContext: Context) : ViewModel(
                     lines += HealthLine(L10n.str("بررسی وب‌هوک ناموفق: ", "Webhook check failed: ") + w.message, false)
             }
 
-            if (cfg.enabled) {
+            if (com.telegrambot.manager.data.store.CloudStore.enabledIds.value.contains(bot.id)) {
+                // Cloud mode: GitHub answers 24/7; the phone listener is idle by design.
+                lines += HealthLine(
+                    L10n.str(
+                        "حالت ابری فعال است — پاسخ‌گویی ۲۴/۷ را در ابزار «ربات ابری ۲۴/۷» ببینید",
+                        "Cloud mode is on — see the 24/7 cloud bot tool for liveness"
+                    ),
+                    true
+                )
+            } else if (cfg.enabled) {
                 val live = BotEngine.isPolling(bot.id)
                 lines += if (live) HealthLine(
                     L10n.str("گوش‌دهی زنده: فعال — ربات در حال پاسخ‌گویی است", "Live listening: active — the bot is answering"),

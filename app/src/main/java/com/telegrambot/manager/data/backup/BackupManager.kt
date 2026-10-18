@@ -11,6 +11,7 @@ import com.telegrambot.manager.data.model.ScheduledMessage
 import com.telegrambot.manager.data.store.AutoReplyStore
 import com.telegrambot.manager.data.store.BotStore
 import com.telegrambot.manager.data.store.ChatStore
+import com.telegrambot.manager.data.store.CloudStore
 import com.telegrambot.manager.data.store.ScheduleStore
 import com.telegrambot.manager.data.store.SettingsStore
 import com.telegrambot.manager.data.store.TemplateStore
@@ -61,6 +62,14 @@ object BackupManager {
         payload.add("autoReply", gson.toJsonTree(AutoReplyStore.get(ctx).allMap()))
         payload.add("schedules", gson.toJsonTree(ScheduleStore.get(ctx).all()))
         payload.add("templates", gson.toJsonTree(TemplateStore.get(ctx).load()))
+
+        // Cloud registrations + GitHub PAT (both sensitive; the whole payload
+        // is AES-encrypted with the user passphrase, so they stay sealed).
+        val cloudStore = CloudStore.get(ctx)
+        val cloud = JsonObject()
+        cloud.addProperty("pat", cloudStore.pat())
+        cloud.add("bots", gson.toJsonTree(cloudStore.allMap()))
+        payload.add("cloud", cloud)
 
         val chats = JsonObject()
         val chatStore = ChatStore.get(ctx)
@@ -124,6 +133,17 @@ object BackupManager {
                 object : TypeToken<List<MsgTemplate>>() {}.type
             ) ?: emptyList()
             TemplateStore.get(ctx).replaceAll(templates)
+
+            // Cloud registrations + PAT (v2.4.0+; optional for old backups).
+            root.optJSONObject("cloud")?.let { cloud ->
+                val pat = cloud.optString("pat", "")
+                if (pat.isNotBlank()) CloudStore.get(ctx).savePat(pat)
+                val cloudMap = gson.fromJson<Map<String, com.telegrambot.manager.data.model.BotCloud>>(
+                    cloud.optJSONObject("bots")?.toString() ?: "{}",
+                    object : TypeToken<Map<String, com.telegrambot.manager.data.model.BotCloud>>() {}.type
+                ) ?: emptyMap()
+                CloudStore.get(ctx).replaceAll(cloudMap)
+            }
 
             // Chat history per bot.
             val chatStore = ChatStore.get(ctx)
